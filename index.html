@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Roadmap Gantt</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="page-title" contenteditable="true" spellcheck="false" data-placeholder="Roadmap" title="Click to rename">Roadmap</h1>
+    <div class="topbar-actions">
+      <span id="file-status" class="file-status">No file connected</span>
+      <button id="open-file-btn" class="btn">Open Project</button>
+      <button id="new-file-btn" class="btn">Create Project</button>
+      <span id="save-status" class="save-status"></span>
+      <div class="view-toggle" role="group" aria-label="Timeline view">
+        <button type="button" class="view-btn" data-view="week">Week</button>
+        <button type="button" class="view-btn" data-view="month">Month</button>
+        <button type="button" class="view-btn" data-view="quarter">Quarter</button>
+      </div>
+      <div class="zoom-toggle" role="group" aria-label="Timeline zoom">
+        <button type="button" id="zoom-out-btn" class="zoom-btn" title="Zoom out">−</button>
+        <span id="zoom-level" class="zoom-level">100%</span>
+        <button type="button" id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
+      </div>
+      <button id="theme-toggle-btn" class="btn" title="Switch to light theme">☀️</button>
+      <button id="export-png-btn" class="btn" disabled>Export PNG</button>
+      <button id="export-pdf-btn" class="btn" disabled>Export PDF</button>
+      <button id="autosort-btn" class="btn" disabled>Auto Sort</button>
+      <button id="add-task-btn" class="btn btn-primary" disabled>+ Add Task</button>
+    </div>
+  </header>
+
+  <div id="unsupported-banner" class="banner" hidden>
+    Your browser doesn't support direct file access (File System Access API). Please open this
+    page in a Chromium-based browser like Edge or Chrome to enable live saving to roadmap.csv.
+  </div>
+
+  <main class="gantt-wrap">
+    <div id="empty-state" class="empty-state">
+      <p>Connect to <code>roadmap.csv</code> to get started.</p>
+      <p class="muted">Use "Open Project" to pick the existing file in this folder, or "Create Project" to start a new one. Once connected, all edits save automatically back to the file on disk.</p>
+    </div>
+    <div id="gantt" class="gantt" hidden>
+      <div class="gantt-header-row">
+        <div class="label-col label-col-header">Task</div>
+        <div id="sprint-header" class="timeline-track timeline-header"></div>
+      </div>
+      <div id="task-rows" class="task-rows"></div>
+    </div>
+  </main>
+
+  <dialog id="edit-dialog" class="edit-dialog">
+    <form id="edit-form">
+      <h2>Edit Task</h2>
+      <label>Name
+        <input type="text" id="edit-name" />
+      </label>
+      <label>Start date (snaps to the start of the week)
+        <input type="date" id="edit-start" />
+      </label>
+      <label>Duration (weeks)
+        <input type="number" id="edit-duration" min="1" step="1" />
+      </label>
+      <label>Bar color
+        <input type="color" id="edit-color" />
+      </label>
+      <div class="edit-dialog-actions">
+        <button type="button" id="edit-cancel-btn" class="btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

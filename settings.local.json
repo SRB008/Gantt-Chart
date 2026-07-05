@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Command *)",
+      "PowerShell(Get-Process *)",
+      "Skill(run)",
+      "PowerShell(\\(Get-Command chromium-cli -ErrorAction SilentlyContinue\\) | Out-String; \\(Get-Command python -ErrorAction SilentlyContinue\\) | Out-String; \\(Get-Command npx -ErrorAction SilentlyContinue\\) | Out-String)",
+      "PowerShell(\\(Get-Command node -ErrorAction SilentlyContinue\\) | Out-String; \\(Get-Command npm -ErrorAction SilentlyContinue\\) | Out-String; Get-ChildItem 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe' -ErrorAction SilentlyContinue; Get-ChildItem 'C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe' -ErrorAction SilentlyContinue)",
+      "PowerShell(Copy-Item *)"
+    ]
+  }
+}

@@ -1,0 +1,514 @@
+:root {
+  --label-width: 240px;
+  --row-height: 46px;
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-alt: #1d212b;
+  --border: #2a2f3a;
+  --text: #e6e8ec;
+  --muted: #8b93a3;
+  --accent: #5b8cff;
+  --accent-2: #7c5cff;
+  --danger: #ff5b6e;
+  --hover-bg: #242938;
+  --print-scale: 1;
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --panel-alt: #eef0f4;
+  --border: #d7dae0;
+  --text: #16181d;
+  --muted: #5b6472;
+  --accent: #3b6fe0;
+  --accent-2: #7c5cff;
+  --danger: #d1354a;
+  --hover-bg: #e2e5ea;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.topbar h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+}
+
+#page-title {
+  cursor: text;
+  outline: none;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 6px;
+  min-width: 24px;
+}
+
+#page-title:hover,
+#page-title:focus {
+  background: var(--panel-alt);
+}
+
+#page-title:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.save-status {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 70px;
+  text-align: right;
+}
+
+.save-status.saving { color: var(--accent); }
+.save-status.error { color: var(--danger); }
+
+.file-status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.file-status.connected { color: #5fd68b; }
+.file-status.error { color: var(--danger); }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.banner {
+  margin: 16px 24px 0;
+  padding: 10px 14px;
+  background: #3a2a12;
+  border: 1px solid #6b4a1a;
+  color: #f0c88a;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text);
+}
+
+.empty-state p { margin: 6px 0; }
+.empty-state .muted { color: var(--muted); font-size: 13px; max-width: 480px; margin: 6px auto; }
+.empty-state code {
+  background: var(--panel-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn:hover { border-color: var(--accent); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-btn {
+  background: var(--panel-alt);
+  color: var(--text);
+  border: none;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.view-btn + .view-btn { border-left: 1px solid var(--border); }
+
+.view-btn:hover { background: var(--hover-bg); }
+
+.view-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.zoom-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.zoom-btn {
+  background: var(--panel-alt);
+  color: var(--text);
+  border: none;
+  width: 28px;
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zoom-btn:hover:not(:disabled) { background: var(--hover-bg); }
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 8px;
+  min-width: 40px;
+  text-align: center;
+  user-select: none;
+}
+
+.gantt-wrap {
+  padding: 24px;
+  overflow-x: auto;
+}
+
+.gantt {
+  display: inline-block;
+  min-width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  /* No overflow:hidden here — that would make .gantt itself the sticky
+     scrollport instead of .gantt-wrap, breaking the frozen label column. */
+}
+
+.gantt-header-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-alt);
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.label-col {
+  width: var(--label-width);
+  min-width: var(--label-width);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--panel-alt);
+  border-top-left-radius: 10px;
+}
+
+.timeline-track {
+  position: relative;
+  display: flex;
+}
+
+.timeline-header {
+  height: 40px;
+}
+
+/* Column cells are sized individually in JS (week/month/quarter widths differ
+   by real calendar length), so only the shared box model lives here. */
+.grid-col {
+  flex: 0 0 auto;
+  border-right: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.sprint-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.task-rows {
+  position: relative;
+}
+
+.task-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  height: var(--row-height);
+  position: relative;
+}
+
+.task-row:last-child { border-bottom: none; }
+.task-row:last-child .task-label { border-bottom-left-radius: 10px; }
+
+.task-row.dragging {
+  z-index: 50;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  background: var(--panel-alt);
+}
+
+.task-label {
+  width: var(--label-width);
+  min-width: var(--label-width);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 4px;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--panel);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 4px 2px;
+  user-select: none;
+  line-height: 1;
+}
+
+.drag-handle:active { cursor: grabbing; }
+
+.task-name {
+  flex: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: 13px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.task-name:hover, .task-name:focus {
+  border-color: var(--border);
+  background: var(--panel);
+  outline: none;
+}
+
+.edit-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.edit-btn:hover { color: var(--accent); }
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.delete-btn:hover { color: var(--danger); }
+
+.row-track {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.bar {
+  position: absolute;
+  top: 7px;
+  height: calc(var(--row-height) - 14px);
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.bar:active { cursor: grabbing; }
+
+.bar.dragging {
+  opacity: 0.95;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+
+.bar-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-handle.left { left: 0; }
+.resize-handle.right { right: 0; }
+
+.resize-handle:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.edit-dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  width: 320px;
+  max-width: 90vw;
+}
+
+.edit-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.edit-dialog h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.edit-dialog label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.edit-dialog input[type="text"],
+.edit-dialog input[type="date"],
+.edit-dialog input[type="number"] {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.edit-dialog input[type="color"] {
+  display: block;
+  margin-top: 4px;
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-alt);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.edit-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-alt: #f4f5f7;
+    --border: #d7dae0;
+    --text: #16181d;
+    --muted: #5b6472;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body { background: #fff; }
+
+  .topbar, .banner, #empty-state { display: none !important; }
+
+  .gantt-wrap { padding: 0; overflow: visible; }
+
+  .gantt {
+    border: none;
+    zoom: var(--print-scale, 1);
+  }
+
+  .drag-handle, .delete-btn, .edit-btn, .resize-handle { display: none !important; }
+}
