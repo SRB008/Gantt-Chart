@@ -138,6 +138,11 @@ body {
 
 .btn:hover { border-color: var(--accent); }
 
+.btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);

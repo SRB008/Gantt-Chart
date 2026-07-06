@@ -28,6 +28,7 @@
   const ZOOM_STEP = 0.25;
   const DEFAULT_ZOOM = 1;
   const THEME_STORAGE_KEY = 'roadmap-gantt-theme';
+  const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TITLE_STORAGE_KEY = 'roadmap-gantt-title';
   const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color'];
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
@@ -63,6 +64,7 @@
   const zoomInBtn = document.getElementById('zoom-in-btn');
   const zoomOutBtn = document.getElementById('zoom-out-btn');
   const zoomLevelEl = document.getElementById('zoom-level');
+  const datesToggleBtn = document.getElementById('dates-toggle-btn');
 
   let tasks = [];
   let saveTimer = null;
@@ -92,6 +94,16 @@
     if (storedTheme === 'light' || storedTheme === 'dark') theme = storedTheme;
   } catch (err) {
     // localStorage unavailable — fall back to the default theme.
+  }
+
+  let datesVisible = true;
+  try {
+    const storedDatesVisible = localStorage.getItem(DATES_STORAGE_KEY);
+    if (storedDatesVisible === 'true' || storedDatesVisible === 'false') {
+      datesVisible = storedDatesVisible === 'true';
+    }
+  } catch (err) {
+    // localStorage unavailable — fall back to the default (dates on).
   }
 
   const supportsFSA = 'showOpenFilePicker' in window && 'showSaveFilePicker' in window;
@@ -590,6 +602,23 @@
     applyTheme();
   }
 
+  // ---------- Dates on bars ----------
+  function syncDatesButton() {
+    datesToggleBtn.textContent = datesVisible ? 'Dates: On' : 'Dates: Off';
+    datesToggleBtn.classList.toggle('active', datesVisible);
+  }
+
+  function toggleDatesVisible() {
+    datesVisible = !datesVisible;
+    try {
+      localStorage.setItem(DATES_STORAGE_KEY, String(datesVisible));
+    } catch (err) {
+      // ignore — persistence is a convenience, not a requirement
+    }
+    syncDatesButton();
+    render();
+  }
+
   // ---------- Page title ----------
   function loadPageTitle() {
     let saved = '';
@@ -697,6 +726,13 @@
       bar.style.left = barLeftPx(range, task) + 'px';
       bar.style.width = barWidthPx(task) + 'px';
       applyBarColor(bar, task);
+
+      if (datesVisible) {
+        const barLabel = document.createElement('span');
+        barLabel.className = 'bar-label';
+        barLabel.textContent = formatBarLabel(task);
+        bar.appendChild(barLabel);
+      }
 
       const leftHandle = document.createElement('div');
       leftHandle.className = 'resize-handle left';
@@ -1067,13 +1103,15 @@
       roundRectPath(ctx, barX, barY, barW, barH, 6);
       ctx.fill();
 
-      ctx.save();
-      roundRectPath(ctx, barX, barY, barW, barH, 6);
-      ctx.clip();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = "600 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
-      ctx.fillText(formatBarLabel(task), barX + 10, y + ROW_HEIGHT / 2);
-      ctx.restore();
+      if (datesVisible) {
+        ctx.save();
+        roundRectPath(ctx, barX, barY, barW, barH, 6);
+        ctx.clip();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = "600 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
+        ctx.fillText(formatBarLabel(task), barX + 10, y + ROW_HEIGHT / 2);
+        ctx.restore();
+      }
     });
 
     return canvas;
@@ -1148,6 +1186,9 @@
 
   themeToggleBtn.addEventListener('click', toggleTheme);
   applyTheme();
+
+  datesToggleBtn.addEventListener('click', toggleDatesVisible);
+  syncDatesButton();
 
   pageTitleEl.addEventListener('blur', savePageTitle);
   pageTitleEl.addEventListener('keydown', (e) => {
