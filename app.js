@@ -989,11 +989,11 @@
     ctx.scale(scale, scale);
 
     const colors = {
-      bg: '#171a21',
-      panelAlt: '#1d212b',
-      border: '#2a2f3a',
-      text: '#e6e8ec',
-      muted: '#8b93a3',
+      bg: '#ffffff',
+      panelAlt: '#f4f5f7',
+      border: '#d7dae0',
+      text: '#16181d',
+      muted: '#5b6472',
     };
 
     ctx.fillStyle = colors.bg;
