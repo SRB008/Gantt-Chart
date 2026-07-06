@@ -471,6 +471,29 @@ body {
   cursor: pointer;
 }
 
+.color-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 12px;
+}
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch:hover,
+.color-swatch:focus-visible {
+  transform: scale(1.12);
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
 .edit-dialog-actions {
   display: flex;
   justify-content: flex-end;
