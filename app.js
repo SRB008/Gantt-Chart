@@ -17,7 +17,7 @@
     { name: 'Yellow', hex: '#FFD505' },
     { name: 'Green', hex: '#4FCE65' },
     { name: 'Blue', hex: '#5B8CFF' },
-    { name: 'Purple', hex: '#C045A8' },
+    { name: 'Purple', hex: '#DC60C3' },
   ];
   const VIEW_MODES = ['week', 'month', 'quarter'];
   const DEFAULT_VIEW_MODE = 'week';
