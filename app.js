@@ -66,7 +66,7 @@
 
   let tasks = [];
   let saveTimer = null;
-  let rowRefs = new Map(); // id -> { rowEl, barEl, barLabelEl }
+  let rowRefs = new Map(); // id -> { rowEl, barEl }
   let fileHandle = null;
   let editingTaskId = null;
 
@@ -702,11 +702,6 @@
       leftHandle.className = 'resize-handle left';
       bar.appendChild(leftHandle);
 
-      const barLabel = document.createElement('span');
-      barLabel.className = 'bar-label';
-      barLabel.textContent = formatBarLabel(task);
-      bar.appendChild(barLabel);
-
       const rightHandle = document.createElement('div');
       rightHandle.className = 'resize-handle right';
       bar.appendChild(rightHandle);
@@ -715,7 +710,7 @@
       row.appendChild(track);
       taskRowsEl.appendChild(row);
 
-      rowRefs.set(task.id, { rowEl: row, barEl: bar, barLabelEl: barLabel });
+      rowRefs.set(task.id, { rowEl: row, barEl: bar });
 
       leftHandle.addEventListener('mousedown', (e) => startResize(e, task, 'left', range));
       rightHandle.addEventListener('mousedown', (e) => startResize(e, task, 'right', range));
@@ -807,7 +802,7 @@
   function startResize(e, task, side, range) {
     e.preventDefault();
     e.stopPropagation();
-    const { barEl, barLabelEl } = rowRefs.get(task.id);
+    const { barEl } = rowRefs.get(task.id);
     const startX = e.clientX;
     const origStart = parseISODate(task.startDate);
     const origDurationWeeks = task.durationWeeks;
@@ -834,7 +829,6 @@
       const previewTask = { startDate: formatISODate(newStart), durationWeeks: newDurationWeeks };
       barEl.style.left = barLeftPx(range, previewTask) + 'px';
       barEl.style.width = barWidthPx(previewTask) + 'px';
-      barLabelEl.textContent = formatBarLabel(previewTask);
 
       task._pendingStartDate = formatISODate(newStart);
       task._pendingDurationWeeks = newDurationWeeks;
