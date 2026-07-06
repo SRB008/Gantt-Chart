@@ -11,6 +11,14 @@
   const PADDING_WEEKS_AFTER = 2;
   const DEFAULT_COLOR_1 = '#5b8cff';
   const DEFAULT_COLOR_2 = '#7c5cff';
+  const PRESET_COLORS = [
+    { name: 'Red', hex: '#FF4853' },
+    { name: 'Orange', hex: '#FF8B3E' },
+    { name: 'Yellow', hex: '#FFD505' },
+    { name: 'Green', hex: '#4FCE65' },
+    { name: 'Blue', hex: '#488FD5' },
+    { name: 'Purple', hex: '#C045A8' },
+  ];
   const VIEW_MODES = ['week', 'month', 'quarter'];
   const DEFAULT_VIEW_MODE = 'week';
   const VIEW_STORAGE_KEY = 'roadmap-gantt-view-mode';
@@ -48,6 +56,7 @@
   const editStartInput = document.getElementById('edit-start');
   const editDurationInput = document.getElementById('edit-duration');
   const editColorInput = document.getElementById('edit-color');
+  const editColorPresetsEl = document.getElementById('edit-color-presets');
   const editCancelBtn = document.getElementById('edit-cancel-btn');
   const pageTitleEl = document.getElementById('page-title');
   const themeToggleBtn = document.getElementById('theme-toggle-btn');
@@ -471,7 +480,7 @@
     try {
       const [handle] = await window.showOpenFilePicker({
         types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }],
-        suggestedName: 'roadmap.csv',
+        suggestedName: 'project.csv',
       });
       await connectHandle(handle);
     } catch (err) {
@@ -482,7 +491,7 @@
   async function createNew() {
     try {
       const handle = await window.showSaveFilePicker({
-        suggestedName: 'roadmap.csv',
+        suggestedName: 'project.csv',
         types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }],
       });
       await connectHandle(handle, { seedIfEmpty: true });
@@ -597,7 +606,7 @@
 
   function savePageTitle() {
     const text = pageTitleEl.textContent.replace(/\s+/g, ' ').trim();
-    pageTitleEl.textContent = text || 'Roadmap';
+    pageTitleEl.textContent = text || 'Project';
     document.title = pageTitleEl.textContent;
     try {
       localStorage.setItem(TITLE_STORAGE_KEY, pageTitleEl.textContent);
@@ -894,6 +903,22 @@
   }
 
   // ---------- Edit dialog ----------
+  function buildColorPresets() {
+    editColorPresetsEl.innerHTML = '';
+    PRESET_COLORS.forEach(({ name, hex }) => {
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'color-swatch';
+      swatch.style.backgroundColor = hex;
+      swatch.title = name;
+      swatch.setAttribute('aria-label', name);
+      swatch.addEventListener('click', () => {
+        editColorInput.value = hex;
+      });
+      editColorPresetsEl.appendChild(swatch);
+    });
+  }
+
   function openEditDialog(task) {
     editingTaskId = task.id;
     editNameInput.value = task.name;
@@ -903,6 +928,8 @@
     editDialog.showModal();
     editNameInput.focus();
   }
+
+  buildColorPresets();
 
   editCancelBtn.addEventListener('click', () => editDialog.close());
 
@@ -924,7 +951,7 @@
 
   // ---------- Export ----------
   function baseFileName() {
-    return fileHandle ? fileHandle.name.replace(/\.csv$/i, '') : 'roadmap';
+    return fileHandle ? fileHandle.name.replace(/\.csv$/i, '') : 'project';
   }
 
   function roundRectPath(ctx, x, y, w, h, r) {
@@ -1004,11 +1031,10 @@
 
       ctx.fillStyle = colors.muted;
       ctx.font = "600 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(col.label, colX + col.widthPx / 2, HEADER_HEIGHT / 2);
+      ctx.textAlign = 'left';
+      ctx.fillText(col.label, colX + 4, HEADER_HEIGHT / 2);
       colX += col.widthPx;
     });
-    ctx.textAlign = 'left';
 
     order.forEach((task, idx) => {
       const y = HEADER_HEIGHT + idx * ROW_HEIGHT;
