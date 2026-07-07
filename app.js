@@ -272,8 +272,8 @@
   }
 
   function applyBarColor(bar, task) {
-    const [c1, c2] = barColors(task);
-    bar.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+    const [c1] = barColors(task);
+    bar.style.background = c1;
   }
 
   // ---------- IndexedDB (persist the file handle across reloads) ----------
@@ -588,7 +588,7 @@
   // ---------- Theme ----------
   function applyTheme() {
     document.documentElement.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    themeToggleBtn.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
     themeToggleBtn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   }
 
@@ -1094,12 +1094,9 @@
       const barY = y + 7;
       const barW = barWidthPx(task);
       const barH = ROW_HEIGHT - 14;
-      const [c1, c2] = barColors(task);
+      const [c1] = barColors(task);
 
-      const grad = ctx.createLinearGradient(barX, barY, barX + barW, barY + barH);
-      grad.addColorStop(0, c1);
-      grad.addColorStop(1, c2);
-      ctx.fillStyle = grad;
+      ctx.fillStyle = c1;
       roundRectPath(ctx, barX, barY, barW, barH, 6);
       ctx.fill();
 
