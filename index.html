@@ -14,6 +14,10 @@
       <button id="open-file-btn" class="btn">Open Project</button>
       <button id="new-file-btn" class="btn">Create Project</button>
       <span id="save-status" class="save-status"></span>
+      <div class="timeline-start-group" role="group" aria-label="Timeline start date">
+        <label for="timeline-start-input">Start</label>
+        <input type="date" id="timeline-start-input" class="timeline-start-input" title="Tasks starting before this date are clipped to show only their remaining duration; tasks that end before this date are hidden" />
+      </div>
       <div class="view-toggle" role="group" aria-label="Timeline view">
         <button type="button" class="view-btn" data-view="week">Week</button>
         <button type="button" class="view-btn" data-view="month">Month</button>
@@ -23,10 +27,6 @@
         <button type="button" id="zoom-out-btn" class="zoom-btn" title="Zoom out">−</button>
         <span id="zoom-level" class="zoom-level">100%</span>
         <button type="button" id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
-      </div>
-      <div class="timeline-start-group" role="group" aria-label="Timeline start date">
-        <label for="timeline-start-input">Start</label>
-        <input type="date" id="timeline-start-input" class="timeline-start-input" title="The timeline never starts later than this date; it still expands earlier if a task begins before it" />
       </div>
       <button id="autosort-btn" class="btn" disabled>Auto Sort</button>
       <button id="dates-toggle-btn" class="btn" title="Show/hide dates on task bars">Dates: On</button>
