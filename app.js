@@ -7,7 +7,6 @@
   const HEADER_HEIGHT = 40;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const MIN_VISIBLE_WEEKS = 10;
-  const PADDING_WEEKS_BEFORE = 1;
   const PADDING_WEEKS_AFTER = 2;
   const DEFAULT_COLOR_1 = '#5b8cff';
   const DEFAULT_COLOR_2 = '#7c5cff';
@@ -29,6 +28,7 @@
   const DEFAULT_ZOOM = 1;
   const THEME_STORAGE_KEY = 'roadmap-gantt-theme';
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
+  const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
   const TITLE_STORAGE_KEY = 'roadmap-gantt-title';
   const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color'];
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
@@ -65,6 +65,7 @@
   const zoomOutBtn = document.getElementById('zoom-out-btn');
   const zoomLevelEl = document.getElementById('zoom-level');
   const datesToggleBtn = document.getElementById('dates-toggle-btn');
+  const timelineStartInput = document.getElementById('timeline-start-input');
 
   let tasks = [];
   let saveTimer = null;
@@ -104,6 +105,20 @@
     }
   } catch (err) {
     // localStorage unavailable — fall back to the default (dates on).
+  }
+
+  function firstOfCurrentMonth() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  let timelineStartDate = firstOfCurrentMonth();
+  try {
+    const storedTimelineStart = localStorage.getItem(TIMELINE_START_STORAGE_KEY);
+    const parsedTimelineStart = storedTimelineStart ? parseISODate(storedTimelineStart) : null;
+    if (parsedTimelineStart) timelineStartDate = parsedTimelineStart;
+  } catch (err) {
+    // localStorage unavailable — fall back to the default timeline start.
   }
 
   const supportsFSA = 'showOpenFilePicker' in window && 'showSaveFilePicker' in window;
@@ -160,20 +175,20 @@
   }
 
   function computeTimelineRange() {
-    let minStart = null;
     let maxEnd = null;
     tasks.forEach((t) => {
       const start = parseISODate(t.startDate);
       if (!start) return;
       const end = addDays(start, t.durationWeeks * 7);
-      if (!minStart || start < minStart) minStart = start;
       if (!maxEnd || end > maxEnd) maxEnd = end;
     });
 
-    if (!minStart) minStart = mondayOf(new Date());
-    if (!maxEnd) maxEnd = addDays(minStart, MIN_VISIBLE_WEEKS * 7);
+    // The chosen timeline start is a hard edge: tasks that begin earlier are
+    // clipped to it and rendered showing only their remaining duration.
+    let rangeStart = mondayOf(timelineStartDate);
 
-    let rangeStart = mondayOf(addDays(minStart, -PADDING_WEEKS_BEFORE * 7));
+    if (!maxEnd) maxEnd = addDays(rangeStart, MIN_VISIBLE_WEEKS * 7);
+
     let rangeEnd = addDays(mondayOf(addDays(maxEnd, PADDING_WEEKS_AFTER * 7)), 7);
 
     const minEnd = addDays(rangeStart, MIN_VISIBLE_WEEKS * 7);
@@ -231,13 +246,24 @@
     return daysBetween(range.start, date) * pxPerDay();
   }
 
-  function barLeftPx(range, task) {
-    const start = parseISODate(task.startDate);
-    return xForDate(range, start) + 4;
+  // Tasks starting before the visible range are clipped to its left edge and
+  // drawn showing only their remaining duration, rather than being hidden.
+  function visibleStart(range, start) {
+    return start < range.start ? range.start : start;
   }
 
-  function barWidthPx(task) {
-    return task.durationWeeks * 7 * pxPerDay() - 8;
+  function barLeftPx(range, task) {
+    const start = parseISODate(task.startDate);
+    return xForDate(range, visibleStart(range, start)) + 4;
+  }
+
+  function barWidthPx(range, task) {
+    const start = parseISODate(task.startDate);
+    const end = addDays(start, task.durationWeeks * 7);
+    // Tasks ending before the range start are filtered out by visibleTasks()
+    // before reaching here; clamp remains as a safety net against negative
+    // widths (which would crash the canvas rounded-rect export).
+    return Math.max(0, daysBetween(visibleStart(range, start), end) * pxPerDay() - 8);
   }
 
   function formatBarLabel(task) {
@@ -619,6 +645,21 @@
     render();
   }
 
+  // ---------- Timeline start date ----------
+  function syncTimelineStartInput() {
+    timelineStartInput.value = formatISODate(timelineStartDate);
+  }
+
+  function setTimelineStartDate(date) {
+    timelineStartDate = startOfDay(date);
+    try {
+      localStorage.setItem(TIMELINE_START_STORAGE_KEY, formatISODate(timelineStartDate));
+    } catch (err) {
+      // ignore — persistence is a convenience, not a requirement
+    }
+    render();
+  }
+
   // ---------- Page title ----------
   function loadPageTitle() {
     let saved = '';
@@ -653,6 +694,17 @@
     return [...tasks].sort((a, b) => a.order - b.order);
   }
 
+  // Tasks that end before the visible range starts have no remaining
+  // duration to show, so they're left out of the timeline entirely.
+  function visibleTasks(range) {
+    return sortedTasks().filter((t) => {
+      const start = parseISODate(t.startDate);
+      if (!start) return false;
+      const end = addDays(start, t.durationWeeks * 7);
+      return end > range.start;
+    });
+  }
+
   function renderColumnCells(container, columns, withLabel) {
     container.innerHTML = '';
     columns.forEach((col) => {
@@ -675,7 +727,7 @@
     taskRowsEl.innerHTML = '';
     rowRefs = new Map();
 
-    sortedTasks().forEach((task) => {
+    visibleTasks(range).forEach((task) => {
       const row = document.createElement('div');
       row.className = 'task-row';
       row.dataset.id = task.id;
@@ -724,7 +776,7 @@
       const bar = document.createElement('div');
       bar.className = 'bar';
       bar.style.left = barLeftPx(range, task) + 'px';
-      bar.style.width = barWidthPx(task) + 'px';
+      bar.style.width = barWidthPx(range, task) + 'px';
       applyBarColor(bar, task);
 
       if (datesVisible) {
@@ -765,7 +817,7 @@
     const startY = e.clientY;
     const origStart = parseISODate(task.startDate);
 
-    const order = sortedTasks();
+    const order = visibleTasks(range);
     const startIndex = order.findIndex((t) => t.id === task.id);
     const origIndexMap = new Map(order.map((t, i) => [t.id, i]));
     let workingOrder = order.map((t) => t.id);
@@ -781,7 +833,9 @@
       // Horizontal: move in time, snapped to whole weeks
       const deltaDays = snapDaysDeltaToWeek(dx);
       const newStart = addDays(origStart, deltaDays);
-      barEl.style.left = xForDate(range, newStart) + 4 + 'px';
+      const previewTask = { startDate: formatISODate(newStart), durationWeeks: task.durationWeeks };
+      barEl.style.left = barLeftPx(range, previewTask) + 'px';
+      barEl.style.width = barWidthPx(range, previewTask) + 'px';
       task._pendingStartDate = formatISODate(newStart);
 
       // Vertical: reorder
@@ -864,7 +918,7 @@
 
       const previewTask = { startDate: formatISODate(newStart), durationWeeks: newDurationWeeks };
       barEl.style.left = barLeftPx(range, previewTask) + 'px';
-      barEl.style.width = barWidthPx(previewTask) + 'px';
+      barEl.style.width = barWidthPx(range, previewTask) + 'px';
 
       task._pendingStartDate = formatISODate(newStart);
       task._pendingDurationWeeks = newDurationWeeks;
@@ -1005,8 +1059,8 @@
   }
 
   function drawGanttToCanvas() {
-    const order = sortedTasks();
     const range = computeTimelineRange();
+    const order = visibleTasks(range);
     const columns = buildColumns(range);
     const width = LABEL_WIDTH + timelineWidthPx(range);
     const height = HEADER_HEIGHT + order.length * ROW_HEIGHT;
@@ -1092,7 +1146,7 @@
 
       const barX = LABEL_WIDTH + barLeftPx(range, task);
       const barY = y + 7;
-      const barW = barWidthPx(task);
+      const barW = barWidthPx(range, task);
       const barH = ROW_HEIGHT - 14;
       const [c1] = barColors(task);
 
@@ -1186,6 +1240,16 @@
 
   datesToggleBtn.addEventListener('click', toggleDatesVisible);
   syncDatesButton();
+
+  timelineStartInput.addEventListener('change', () => {
+    const parsed = parseISODate(timelineStartInput.value);
+    if (parsed) {
+      setTimelineStartDate(parsed);
+    } else {
+      syncTimelineStartInput();
+    }
+  });
+  syncTimelineStartInput();
 
   pageTitleEl.addEventListener('blur', savePageTitle);
   pageTitleEl.addEventListener('keydown', (e) => {
