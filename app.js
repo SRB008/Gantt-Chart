@@ -27,6 +27,9 @@
   const ZOOM_STEP = 0.25;
   const DEFAULT_ZOOM = 1;
   const THEME_STORAGE_KEY = 'roadmap-gantt-theme';
+  const LABEL_WIDTH_STORAGE_KEY = 'roadmap-gantt-label-width';
+  const MIN_LABEL_WIDTH = 160;
+  const MAX_LABEL_WIDTH = 480;
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
   const TITLE_STORAGE_KEY = 'roadmap-gantt-title';
@@ -66,6 +69,7 @@
   const zoomLevelEl = document.getElementById('zoom-level');
   const datesToggleBtn = document.getElementById('dates-toggle-btn');
   const timelineStartInput = document.getElementById('timeline-start-input');
+  const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
   let tasks = [];
   let saveTimer = null;
@@ -95,6 +99,16 @@
     if (storedTheme === 'light' || storedTheme === 'dark') theme = storedTheme;
   } catch (err) {
     // localStorage unavailable — fall back to the default theme.
+  }
+
+  let labelWidth = LABEL_WIDTH;
+  try {
+    const storedLabelWidth = parseFloat(localStorage.getItem(LABEL_WIDTH_STORAGE_KEY));
+    if (!Number.isNaN(storedLabelWidth) && storedLabelWidth >= MIN_LABEL_WIDTH && storedLabelWidth <= MAX_LABEL_WIDTH) {
+      labelWidth = storedLabelWidth;
+    }
+  } catch (err) {
+    // localStorage unavailable — fall back to the default label width.
   }
 
   let datesVisible = true;
@@ -628,6 +642,41 @@
     applyTheme();
   }
 
+  // ---------- Task column width ----------
+  function applyLabelWidth() {
+    document.documentElement.style.setProperty('--label-width', labelWidth + 'px');
+  }
+
+  function startLabelColResize(e) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = labelWidth;
+
+    labelColResizeHandle.classList.add('active');
+    document.body.style.userSelect = 'none';
+
+    function onMove(ev) {
+      const dx = ev.clientX - startX;
+      labelWidth = Math.max(MIN_LABEL_WIDTH, Math.min(MAX_LABEL_WIDTH, startWidth + dx));
+      applyLabelWidth();
+    }
+
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      labelColResizeHandle.classList.remove('active');
+      document.body.style.userSelect = '';
+      try {
+        localStorage.setItem(LABEL_WIDTH_STORAGE_KEY, String(labelWidth));
+      } catch (err) {
+        // ignore — persistence is a convenience, not a requirement
+      }
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   // ---------- Dates on bars ----------
   function syncDatesButton() {
     datesToggleBtn.textContent = datesVisible ? 'Dates: On' : 'Dates: Off';
@@ -1062,7 +1111,7 @@
     const range = computeTimelineRange();
     const order = visibleTasks(range);
     const columns = buildColumns(range);
-    const width = LABEL_WIDTH + timelineWidthPx(range);
+    const width = labelWidth + timelineWidthPx(range);
     const height = HEADER_HEIGHT + order.length * ROW_HEIGHT;
 
     const scale = 2; // render at 2x for a crisp export
@@ -1095,8 +1144,8 @@
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(LABEL_WIDTH + 0.5, 0);
-    ctx.lineTo(LABEL_WIDTH + 0.5, height);
+    ctx.moveTo(labelWidth + 0.5, 0);
+    ctx.lineTo(labelWidth + 0.5, height);
     ctx.stroke();
 
     ctx.fillStyle = colors.muted;
@@ -1105,7 +1154,7 @@
     ctx.textAlign = 'left';
     ctx.fillText('TASK', 12, HEADER_HEIGHT / 2);
 
-    let colX = LABEL_WIDTH;
+    let colX = labelWidth;
     columns.forEach((col) => {
       ctx.strokeStyle = colors.border;
       ctx.beginPath();
@@ -1129,7 +1178,7 @@
       ctx.lineTo(width, y + ROW_HEIGHT + 0.5);
       ctx.stroke();
 
-      let gx = LABEL_WIDTH;
+      let gx = labelWidth;
       columns.forEach((col) => {
         gx += col.widthPx;
         ctx.beginPath();
@@ -1141,10 +1190,10 @@
       ctx.fillStyle = colors.text;
       ctx.font = "13px -apple-system, 'Segoe UI', Roboto, sans-serif";
       ctx.textBaseline = 'middle';
-      const name = truncateToWidth(ctx, task.name || '', LABEL_WIDTH - 24);
+      const name = truncateToWidth(ctx, task.name || '', labelWidth - 24);
       ctx.fillText(name, 16, y + ROW_HEIGHT / 2);
 
-      const barX = LABEL_WIDTH + barLeftPx(range, task);
+      const barX = labelWidth + barLeftPx(range, task);
       const barY = y + 7;
       const barW = barWidthPx(range, task);
       const barH = ROW_HEIGHT - 14;
@@ -1183,7 +1232,7 @@
 
   function exportPdf() {
     const range = computeTimelineRange();
-    const ganttWidth = LABEL_WIDTH + timelineWidthPx(range);
+    const ganttWidth = labelWidth + timelineWidthPx(range);
     const scale = Math.min(1, PRINT_PAGE_WIDTH_PX / ganttWidth);
     document.documentElement.style.setProperty('--print-scale', scale);
 
@@ -1240,6 +1289,9 @@
 
   datesToggleBtn.addEventListener('click', toggleDatesVisible);
   syncDatesButton();
+
+  labelColResizeHandle.addEventListener('mousedown', startLabelColResize);
+  applyLabelWidth();
 
   timelineStartInput.addEventListener('change', () => {
     const parsed = parseISODate(timelineStartInput.value);

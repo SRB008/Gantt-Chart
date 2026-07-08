@@ -275,6 +275,23 @@ body {
   border-top-left-radius: 10px;
 }
 
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.active {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
 .timeline-track {
   position: relative;
   display: flex;
@@ -558,5 +575,5 @@ body {
     zoom: var(--print-scale, 1);
   }
 
-  .drag-handle, .delete-btn, .edit-btn, .resize-handle { display: none !important; }
+  .drag-handle, .delete-btn, .edit-btn, .resize-handle, .col-resize-handle { display: none !important; }
 }
