@@ -2,7 +2,11 @@
   const WEEK_COL_WIDTH = 90;
   const MONTH_COL_WIDTH = 160;
   const QUARTER_COL_WIDTH = 220;
-  const ROW_HEIGHT = 46;
+  const ROW_HEIGHTS = { narrow: 32, normal: 46, wide: 64 };
+  const DENSITY_LEVELS = ['narrow', 'normal', 'wide'];
+  const DENSITY_LABELS = { narrow: 'Narrow', normal: 'Normal', wide: 'Wide' };
+  const DEFAULT_DENSITY = 'normal';
+  const DENSITY_STORAGE_KEY = 'roadmap-gantt-density';
   const LABEL_WIDTH = 240;
   const HEADER_HEIGHT = 40;
   const DAY_MS = 24 * 60 * 60 * 1000;
@@ -68,6 +72,7 @@
   const zoomOutBtn = document.getElementById('zoom-out-btn');
   const zoomLevelEl = document.getElementById('zoom-level');
   const datesToggleBtn = document.getElementById('dates-toggle-btn');
+  const densityToggleBtn = document.getElementById('density-toggle-btn');
   const timelineStartInput = document.getElementById('timeline-start-input');
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
@@ -120,6 +125,16 @@
   } catch (err) {
     // localStorage unavailable — fall back to the default (dates on).
   }
+
+  let density = DEFAULT_DENSITY;
+  try {
+    const storedDensity = localStorage.getItem(DENSITY_STORAGE_KEY);
+    if (DENSITY_LEVELS.includes(storedDensity)) density = storedDensity;
+  } catch (err) {
+    // localStorage unavailable — fall back to the default density.
+  }
+
+  let ROW_HEIGHT = ROW_HEIGHTS[density];
 
   function firstOfCurrentMonth() {
     const now = new Date();
@@ -691,6 +706,26 @@
       // ignore — persistence is a convenience, not a requirement
     }
     syncDatesButton();
+    render();
+  }
+
+  // ---------- Density (row height) ----------
+  function applyDensity() {
+    document.documentElement.dataset.density = density;
+    ROW_HEIGHT = ROW_HEIGHTS[density];
+    densityToggleBtn.textContent = `Density: ${DENSITY_LABELS[density]}`;
+    densityToggleBtn.classList.toggle('active', density !== DEFAULT_DENSITY);
+  }
+
+  function cycleDensity() {
+    const idx = DENSITY_LEVELS.indexOf(density);
+    density = DENSITY_LEVELS[(idx + 1) % DENSITY_LEVELS.length];
+    try {
+      localStorage.setItem(DENSITY_STORAGE_KEY, density);
+    } catch (err) {
+      // ignore — persistence is a convenience, not a requirement
+    }
+    applyDensity();
     render();
   }
 
@@ -1289,6 +1324,9 @@
 
   datesToggleBtn.addEventListener('click', toggleDatesVisible);
   syncDatesButton();
+
+  densityToggleBtn.addEventListener('click', cycleDensity);
+  applyDensity();
 
   labelColResizeHandle.addEventListener('mousedown', startLabelColResize);
   applyLabelWidth();
