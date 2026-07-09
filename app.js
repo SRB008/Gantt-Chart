@@ -1055,7 +1055,7 @@
       startDate: formatISODate(mondayOf(new Date())),
       durationWeeks: 1,
       order: tasks.length,
-      color: '',
+      color: '#5B8CFF',
     };
     tasks.push(newTask);
     render();
