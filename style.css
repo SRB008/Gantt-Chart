@@ -1,6 +1,7 @@
 :root {
   --label-width: 240px;
   --row-height: 46px;
+  --bar-height: 32px;
   --bg: #0f1115;
   --panel: #171a21;
   --panel-alt: #1d212b;
@@ -16,10 +17,12 @@
 
 :root[data-density="narrow"] {
   --row-height: 32px;
+  --bar-height: 18px;
 }
 
 :root[data-density="wide"] {
   --row-height: 64px;
+  --bar-height: 32px;
 }
 
 :root[data-theme="light"] {
@@ -424,8 +427,8 @@ body {
 
 .bar {
   position: absolute;
-  top: 7px;
-  height: calc(var(--row-height) - 14px);
+  top: calc((var(--row-height) - var(--bar-height)) / 2);
+  height: var(--bar-height);
   border-radius: 6px;
   background: var(--accent);
   display: flex;

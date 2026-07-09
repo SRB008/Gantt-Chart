@@ -3,6 +3,7 @@
   const MONTH_COL_WIDTH = 160;
   const QUARTER_COL_WIDTH = 220;
   const ROW_HEIGHTS = { narrow: 32, normal: 46, wide: 64 };
+  const BAR_HEIGHTS = { narrow: 18, normal: 32, wide: 32 };
   const DENSITY_LEVELS = ['narrow', 'normal', 'wide'];
   const DENSITY_LABELS = { narrow: 'Narrow', normal: 'Normal', wide: 'Wide' };
   const DEFAULT_DENSITY = 'normal';
@@ -135,6 +136,7 @@
   }
 
   let ROW_HEIGHT = ROW_HEIGHTS[density];
+  let BAR_HEIGHT = BAR_HEIGHTS[density];
 
   function firstOfCurrentMonth() {
     const now = new Date();
@@ -713,6 +715,7 @@
   function applyDensity() {
     document.documentElement.dataset.density = density;
     ROW_HEIGHT = ROW_HEIGHTS[density];
+    BAR_HEIGHT = BAR_HEIGHTS[density];
     densityToggleBtn.textContent = `Density: ${DENSITY_LABELS[density]}`;
     densityToggleBtn.classList.toggle('active', density !== DEFAULT_DENSITY);
   }
@@ -1229,9 +1232,9 @@
       ctx.fillText(name, 16, y + ROW_HEIGHT / 2);
 
       const barX = labelWidth + barLeftPx(range, task);
-      const barY = y + 7;
+      const barY = y + (ROW_HEIGHT - BAR_HEIGHT) / 2;
       const barW = barWidthPx(range, task);
-      const barH = ROW_HEIGHT - 14;
+      const barH = BAR_HEIGHT;
       const [c1] = barColors(task);
 
       ctx.fillStyle = c1;
