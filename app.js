@@ -42,7 +42,6 @@
   const LABEL_MODE_STORAGE_KEY = 'roadmap-gantt-label-mode';
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
-  const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color', 'capability'];
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
   const DB_NAME = 'roadmap-gantt';
   const DB_STORE = 'handles';
@@ -394,107 +393,46 @@
     });
   }
 
-  // ---------- CSV ----------
-  function csvEscape(value) {
-    const str = String(value ?? '');
-    if (/[",\n]/.test(str)) {
-      return '"' + str.replace(/"/g, '""') + '"';
-    }
-    return str;
-  }
-
-  function parseCsvLine(line) {
-    const fields = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (inQuotes) {
-        if (c === '"') {
-          if (line[i + 1] === '"') {
-            cur += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          cur += c;
-        }
-      } else if (c === '"') {
-        inQuotes = true;
-      } else if (c === ',') {
-        fields.push(cur);
-        cur = '';
-      } else {
-        cur += c;
-      }
-    }
-    fields.push(cur);
-    return fields;
-  }
-
-  function csvHeaders(text) {
-    const raw = text.replace(/\r\n/g, '\n').trim();
+  // ---------- JSON ----------
+  function parseJson(text) {
+    const raw = text.trim();
     if (!raw) return [];
-    return parseCsvLine(raw.split('\n')[0]);
-  }
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      throw new Error('Invalid JSON: ' + err.message);
+    }
+    if (!Array.isArray(data)) throw new Error('Expected a JSON array of tasks.');
 
-  function isLegacyCsv(text) {
-    const headers = csvHeaders(text);
-    return headers.includes('startSprint') && !headers.includes('startDate');
-  }
-
-  function parseCsv(text) {
-    const raw = text.replace(/\r\n/g, '\n').trim();
-    if (!raw) return [];
-    const lines = raw.split('\n');
-    const headers = parseCsvLine(lines[0]);
-    const legacy = headers.includes('startSprint') && !headers.includes('startDate');
-    const legacyAnchor = mondayOf(new Date());
-
-    const result = [];
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      const fields = parseCsvLine(lines[i]);
-      const row = {};
-      headers.forEach((h, idx) => (row[h] = fields[idx]));
-
-      let startDate;
-      let durationWeeks;
-      if (legacy) {
-        // Old format stored an abstract "sprint" index/length; reinterpret each
-        // sprint as one week, anchored to the current week so relative spacing
-        // between tasks is preserved exactly.
-        const sprintNum = parseInt(row.startSprint, 10) || 1;
-        startDate = formatISODate(addDays(legacyAnchor, (sprintNum - 1) * 7));
-        durationWeeks = Math.max(1, parseInt(row.duration, 10) || 1);
-      } else {
-        const parsed = parseISODate(row.startDate) || legacyAnchor;
-        startDate = formatISODate(mondayOf(parsed));
-        durationWeeks = Math.max(1, parseInt(row.durationWeeks, 10) || 1);
-      }
-
-      result.push({
-        id: row.id,
+    const result = data.map((row) => {
+      const parsed = parseISODate(row.startDate) || mondayOf(new Date());
+      return {
+        id: row.id != null ? String(row.id) : uid(),
         name: row.name || '',
-        startDate,
-        durationWeeks,
-        order: parseInt(row.order, 10) || 0,
+        startDate: formatISODate(mondayOf(parsed)),
+        durationWeeks: Math.max(1, parseInt(row.durationWeeks, 10) || 1),
+        order: Number.isFinite(row.order) ? row.order : 0,
         color: row.color || '',
         capability: row.capability || '',
-      });
-    }
+      };
+    });
     result.sort((a, b) => a.order - b.order);
     return result;
   }
 
-  function serializeCsv(list) {
+  function serializeJson(list) {
     const sorted = [...list].sort((a, b) => a.order - b.order);
-    const lines = [CSV_HEADERS.join(',')];
-    sorted.forEach((t) => {
-      lines.push(CSV_HEADERS.map((h) => csvEscape(t[h])).join(','));
-    });
-    return lines.join('\n') + '\n';
+    const data = sorted.map((t) => ({
+      id: t.id,
+      name: t.name,
+      startDate: t.startDate,
+      durationWeeks: t.durationWeeks,
+      order: t.order,
+      color: t.color,
+      capability: t.capability,
+    }));
+    return JSON.stringify(data, null, 2) + '\n';
   }
 
   const SEED_TASKS = [
@@ -506,7 +444,7 @@
     { name: 'Launch', startWeekOffset: 12, durationWeeks: 1 },
   ];
 
-  function buildSeedCsv() {
+  function buildSeedJson() {
     const anchor = mondayOf(new Date());
     const seedTasks = SEED_TASKS.map((t, idx) => ({
       id: String(idx + 1),
@@ -517,7 +455,7 @@
       color: '',
       capability: '',
     }));
-    return serializeCsv(seedTasks);
+    return serializeJson(seedTasks);
   }
 
   // ---------- File connection ----------
@@ -554,22 +492,15 @@
     const file = await fileHandle.getFile();
     let text = await file.text();
     if (!text.trim() && seedIfEmpty) {
-      text = buildSeedCsv();
+      text = buildSeedJson();
       await writeFile(text);
     }
 
-    const needsMigration = isLegacyCsv(text);
-    tasks = parseCsv(text);
+    tasks = parseJson(text);
     setFileStatus('Connected: ' + fileHandle.name, 'connected');
     applyPageTitleFromFile(fileHandle.name);
     showGantt(true);
     render();
-
-    // Persist the migrated date-based format immediately so the anchor date
-    // doesn't keep drifting forward every time this file is reopened unsaved.
-    if (needsMigration) {
-      await writeFile(serializeCsv(tasks));
-    }
     return true;
   }
 
@@ -582,8 +513,8 @@
   async function openExisting() {
     try {
       const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }],
-        suggestedName: 'project.csv',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        suggestedName: 'project.json',
       });
       await connectHandle(handle);
     } catch (err) {
@@ -594,8 +525,8 @@
   async function createNew() {
     try {
       const handle = await window.showSaveFilePicker({
-        suggestedName: 'project.csv',
-        types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }],
+        suggestedName: 'project.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
       });
       await connectHandle(handle, { seedIfEmpty: true });
     } catch (err) {
@@ -879,9 +810,9 @@
 
   // ---------- Page title ----------
   // Derives the chart title from the connected file's name so the chart is
-  // always labeled after the project it represents, e.g. "roadmap.csv" -> "Roadmap".
+  // always labeled after the project it represents, e.g. "roadmap.json" -> "Roadmap".
   function titleFromFileName(fileName) {
-    const base = fileName.replace(/\.csv$/i, '');
+    const base = fileName.replace(/\.json$/i, '');
     const words = base.split(/[\s_-]+/).filter(Boolean);
     if (!words.length) return 'Project';
     return words.map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
@@ -1253,7 +1184,7 @@
 
   // ---------- Export ----------
   function baseFileName() {
-    return fileHandle ? fileHandle.name.replace(/\.csv$/i, '') : 'project';
+    return fileHandle ? fileHandle.name.replace(/\.json$/i, '') : 'project';
   }
 
   function roundRectPath(ctx, x, y, w, h, r) {
@@ -1429,7 +1360,7 @@
   async function saveTasks() {
     if (!fileHandle) return;
     try {
-      await writeFile(serializeCsv(tasks));
+      await writeFile(serializeJson(tasks));
       saveStatusEl.textContent = 'Saved';
       saveStatusEl.className = 'save-status';
     } catch (err) {
