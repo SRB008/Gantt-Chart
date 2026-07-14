@@ -486,7 +486,8 @@ body {
 
 .edit-dialog input[type="text"],
 .edit-dialog input[type="date"],
-.edit-dialog input[type="number"] {
+.edit-dialog input[type="number"],
+.edit-dialog select {
   display: block;
   width: 100%;
   margin-top: 4px;
@@ -538,6 +539,94 @@ body {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 4px;
+}
+
+.display-dialog {
+  width: 280px;
+}
+
+.display-group {
+  margin-bottom: 14px;
+}
+
+.display-group-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.display-group .view-toggle {
+  width: fit-content;
+}
+
+.display-group .view-btn {
+  flex: 1;
+}
+
+.filter-dialog {
+  width: 360px;
+}
+
+.filter-hint {
+  margin: -6px 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.filter-groups {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-capability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.filter-option-btn {
+  text-align: left;
+  background: var(--panel-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-option-btn:hover { background: var(--hover-bg); }
+
+.filter-option-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.filter-color-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.filter-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.filter-color-swatch.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media print {

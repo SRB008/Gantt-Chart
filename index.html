@@ -30,9 +30,8 @@
         <button type="button" id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
       </div>
       <button id="autosort-btn" class="btn" disabled>Auto Sort</button>
-      <button id="dates-toggle-btn" class="btn" title="Cycle task bar label: Off, Weeks, Dates">Label: Dates</button>
-      <button id="density-toggle-btn" class="btn" title="Cycle row height: Narrow, Normal, or Wide">Density: Normal</button>
-      <button id="theme-toggle-btn" class="btn" title="Switch to light theme">Theme: Dark</button>
+      <button id="filter-btn" class="btn" title="Filter which task bars are shown, by capability and color">Filter</button>
+      <button id="display-btn" class="btn" title="Change label, density, and theme display options">Display</button>
       <button id="export-png-btn" class="btn" disabled>Export PNG</button>
       <button id="export-pdf-btn" class="btn" disabled>Export PDF</button>
       <button id="add-task-btn" class="btn btn-primary" disabled>+ Add Task</button>
@@ -73,6 +72,20 @@
       <label>Duration (weeks)
         <input type="number" id="edit-duration" min="1" step="1" />
       </label>
+      <label>Capability
+        <select id="edit-capability">
+          <option value="">—</option>
+          <option value="Sales">Sales</option>
+          <option value="Fulfilment">Fulfilment</option>
+          <option value="Production">Production</option>
+          <option value="Payment">Payment</option>
+          <option value="Customer Service">Customer Service</option>
+          <option value="Self Serve">Self Serve</option>
+          <option value="UX and UI">UX and UI</option>
+          <option value="Verfication">Verfication</option>
+          <option value="Technology">Technology</option>
+        </select>
+      </label>
       <label>Bar color
         <input type="color" id="edit-color" />
       </label>
@@ -82,6 +95,55 @@
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="display-dialog" class="edit-dialog display-dialog">
+    <h2>Display</h2>
+    <div class="display-group">
+      <span class="display-group-label">Label</span>
+      <div class="view-toggle" role="group" aria-label="Task bar label">
+        <button type="button" class="view-btn" data-group="label" data-value="off">Off</button>
+        <button type="button" class="view-btn" data-group="label" data-value="weeks">Weeks</button>
+        <button type="button" class="view-btn" data-group="label" data-value="dates">Dates</button>
+      </div>
+    </div>
+    <div class="display-group">
+      <span class="display-group-label">Density</span>
+      <div class="view-toggle" role="group" aria-label="Row density">
+        <button type="button" class="view-btn" data-group="density" data-value="narrow">Narrow</button>
+        <button type="button" class="view-btn" data-group="density" data-value="normal">Normal</button>
+        <button type="button" class="view-btn" data-group="density" data-value="wide">Wide</button>
+      </div>
+    </div>
+    <div class="display-group">
+      <span class="display-group-label">Theme</span>
+      <div class="view-toggle" role="group" aria-label="Color theme">
+        <button type="button" class="view-btn" data-group="theme" data-value="dark">Dark</button>
+        <button type="button" class="view-btn" data-group="theme" data-value="light">Light</button>
+      </div>
+    </div>
+    <div class="edit-dialog-actions">
+      <button type="button" id="display-close-btn" class="btn">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="filter-dialog" class="edit-dialog filter-dialog">
+    <h2>Filter</h2>
+    <p class="filter-hint">Show tasks matching the selected capability and color. Nothing selected in a group shows all.</p>
+    <div class="filter-groups">
+      <div class="filter-group">
+        <span class="display-group-label">Capability</span>
+        <div id="filter-capability-list" class="filter-capability-list"></div>
+      </div>
+      <div class="filter-group">
+        <span class="display-group-label">Color</span>
+        <div id="filter-color-list" class="filter-color-list"></div>
+      </div>
+    </div>
+    <div class="edit-dialog-actions">
+      <button type="button" id="filter-clear-btn" class="btn">Clear</button>
+      <button type="button" id="filter-close-btn" class="btn btn-primary">Close</button>
+    </div>
   </dialog>
 
   <script src="app.js"></script>

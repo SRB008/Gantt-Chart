@@ -5,7 +5,6 @@
   const ROW_HEIGHTS = { narrow: 32, normal: 46, wide: 64 };
   const BAR_HEIGHTS = { narrow: 18, normal: 32, wide: 32 };
   const DENSITY_LEVELS = ['narrow', 'normal', 'wide'];
-  const DENSITY_LABELS = { narrow: 'Narrow', normal: 'Normal', wide: 'Wide' };
   const DEFAULT_DENSITY = 'normal';
   const DENSITY_STORAGE_KEY = 'roadmap-gantt-density';
   const LABEL_WIDTH = 240;
@@ -23,6 +22,10 @@
     { name: 'Blue', hex: '#5B8CFF' },
     { name: 'Purple', hex: '#DC60C3' },
   ];
+  const CAPABILITY_OPTIONS = [
+    'Sales', 'Fulfilment', 'Production', 'Payment', 'Customer Service',
+    'Self Serve', 'UX and UI', 'Verfication', 'Technology',
+  ];
   const VIEW_MODES = ['week', 'month', 'quarter'];
   const DEFAULT_VIEW_MODE = 'week';
   const VIEW_STORAGE_KEY = 'roadmap-gantt-view-mode';
@@ -36,12 +39,11 @@
   const MIN_LABEL_WIDTH = 160;
   const MAX_LABEL_WIDTH = 480;
   const LABEL_MODES = ['off', 'weeks', 'dates'];
-  const LABEL_MODE_TEXT = { off: 'Off', weeks: 'Weeks', dates: 'Dates' };
   const DEFAULT_LABEL_MODE = 'dates';
   const LABEL_MODE_STORAGE_KEY = 'roadmap-gantt-label-mode';
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
-  const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color'];
+  const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color', 'capability'];
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
   const DB_NAME = 'roadmap-gantt';
   const DB_STORE = 'handles';
@@ -60,7 +62,7 @@
   const unsupportedBanner = document.getElementById('unsupported-banner');
   const emptyState = document.getElementById('empty-state');
   const ganttEl = document.getElementById('gantt');
-  const viewButtons = Array.from(document.querySelectorAll('.view-btn'));
+  const viewButtons = Array.from(document.querySelectorAll('.topbar-actions > .view-toggle > .view-btn'));
 
   const editDialog = document.getElementById('edit-dialog');
   const editForm = document.getElementById('edit-form');
@@ -68,15 +70,23 @@
   const editStartInput = document.getElementById('edit-start');
   const editDurationInput = document.getElementById('edit-duration');
   const editColorInput = document.getElementById('edit-color');
+  const editCapabilityInput = document.getElementById('edit-capability');
   const editColorPresetsEl = document.getElementById('edit-color-presets');
   const editCancelBtn = document.getElementById('edit-cancel-btn');
   const pageTitleEl = document.getElementById('page-title');
-  const themeToggleBtn = document.getElementById('theme-toggle-btn');
   const zoomInBtn = document.getElementById('zoom-in-btn');
   const zoomOutBtn = document.getElementById('zoom-out-btn');
   const zoomLevelEl = document.getElementById('zoom-level');
-  const datesToggleBtn = document.getElementById('dates-toggle-btn');
-  const densityToggleBtn = document.getElementById('density-toggle-btn');
+  const displayBtn = document.getElementById('display-btn');
+  const displayDialog = document.getElementById('display-dialog');
+  const displayCloseBtn = document.getElementById('display-close-btn');
+  const displayGroupButtons = Array.from(displayDialog.querySelectorAll('.view-btn'));
+  const filterBtn = document.getElementById('filter-btn');
+  const filterDialog = document.getElementById('filter-dialog');
+  const filterCloseBtn = document.getElementById('filter-close-btn');
+  const filterClearBtn = document.getElementById('filter-clear-btn');
+  const filterCapabilityListEl = document.getElementById('filter-capability-list');
+  const filterColorListEl = document.getElementById('filter-color-list');
   const timelineStartInput = document.getElementById('timeline-start-input');
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
@@ -85,6 +95,10 @@
   let rowRefs = new Map(); // id -> { rowEl, barEl }
   let fileHandle = null;
   let editingTaskId = null;
+
+  // '' represents tasks with no capability / no color set.
+  let filterCapabilities = new Set();
+  let filterColors = new Set();
 
   let viewMode = DEFAULT_VIEW_MODE;
   try {
@@ -468,6 +482,7 @@
         durationWeeks,
         order: parseInt(row.order, 10) || 0,
         color: row.color || '',
+        capability: row.capability || '',
       });
     }
     result.sort((a, b) => a.order - b.order);
@@ -501,6 +516,7 @@
       durationWeeks: t.durationWeeks,
       order: idx,
       color: '',
+      capability: '',
     }));
     return serializeCsv(seedTasks);
   }
@@ -664,18 +680,18 @@
   // ---------- Theme ----------
   function applyTheme() {
     document.documentElement.dataset.theme = theme;
-    themeToggleBtn.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
-    themeToggleBtn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   }
 
-  function toggleTheme() {
-    theme = theme === 'dark' ? 'light' : 'dark';
+  function setTheme(next) {
+    if ((next !== 'dark' && next !== 'light') || next === theme) return;
+    theme = next;
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch (err) {
       // ignore — persistence is a convenience, not a requirement
     }
     applyTheme();
+    syncDisplayDialog();
   }
 
   // ---------- Task column width ----------
@@ -714,20 +730,15 @@
   }
 
   // ---------- Bar label mode (off / weeks / dates) ----------
-  function syncDatesButton() {
-    datesToggleBtn.textContent = `Label: ${LABEL_MODE_TEXT[labelMode]}`;
-    datesToggleBtn.classList.toggle('active', labelMode !== DEFAULT_LABEL_MODE);
-  }
-
-  function toggleDatesVisible() {
-    const idx = LABEL_MODES.indexOf(labelMode);
-    labelMode = LABEL_MODES[(idx + 1) % LABEL_MODES.length];
+  function setLabelMode(mode) {
+    if (!LABEL_MODES.includes(mode) || mode === labelMode) return;
+    labelMode = mode;
     try {
       localStorage.setItem(LABEL_MODE_STORAGE_KEY, labelMode);
     } catch (err) {
       // ignore — persistence is a convenience, not a requirement
     }
-    syncDatesButton();
+    syncDisplayDialog();
     render();
   }
 
@@ -736,19 +747,119 @@
     document.documentElement.dataset.density = density;
     ROW_HEIGHT = ROW_HEIGHTS[density];
     BAR_HEIGHT = BAR_HEIGHTS[density];
-    densityToggleBtn.textContent = `Density: ${DENSITY_LABELS[density]}`;
-    densityToggleBtn.classList.toggle('active', density !== DEFAULT_DENSITY);
   }
 
-  function cycleDensity() {
-    const idx = DENSITY_LEVELS.indexOf(density);
-    density = DENSITY_LEVELS[(idx + 1) % DENSITY_LEVELS.length];
+  function setDensity(level) {
+    if (!DENSITY_LEVELS.includes(level) || level === density) return;
+    density = level;
     try {
       localStorage.setItem(DENSITY_STORAGE_KEY, density);
     } catch (err) {
       // ignore — persistence is a convenience, not a requirement
     }
     applyDensity();
+    syncDisplayDialog();
+    render();
+  }
+
+  // ---------- Display options popup (label / density / theme) ----------
+  function syncDisplayDialog() {
+    const current = { label: labelMode, density, theme };
+    displayGroupButtons.forEach((btn) => {
+      const { group, value } = btn.dataset;
+      btn.classList.toggle('active', current[group] === value);
+    });
+  }
+
+  function openDisplayDialog() {
+    syncDisplayDialog();
+    displayDialog.showModal();
+  }
+
+  // ---------- Filter popup (capability / color) ----------
+  function capabilitiesInUse() {
+    const present = new Set(tasks.map((t) => t.capability || ''));
+    const ordered = CAPABILITY_OPTIONS.filter((c) => present.has(c));
+    if (present.has('')) ordered.push('');
+    return ordered;
+  }
+
+  function colorsInUse() {
+    const present = new Set(tasks.map((t) => (t.color || '').toLowerCase()));
+    const ordered = [...present].filter((c) => c).sort();
+    if (present.has('')) ordered.push('');
+    return ordered;
+  }
+
+  function toggleFilterValue(set, value) {
+    if (set.has(value)) set.delete(value);
+    else set.add(value);
+  }
+
+  function syncFilterButton() {
+    filterBtn.classList.toggle('active', filterCapabilities.size > 0 || filterColors.size > 0);
+  }
+
+  function renderFilterDialog() {
+    filterCapabilityListEl.innerHTML = '';
+    const capOptions = capabilitiesInUse();
+    if (!capOptions.length) {
+      const empty = document.createElement('p');
+      empty.className = 'filter-empty';
+      empty.textContent = 'No capabilities set yet.';
+      filterCapabilityListEl.appendChild(empty);
+    }
+    capOptions.forEach((cap) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-option-btn';
+      btn.textContent = cap || 'None';
+      btn.classList.toggle('active', filterCapabilities.has(cap));
+      btn.addEventListener('click', () => {
+        toggleFilterValue(filterCapabilities, cap);
+        btn.classList.toggle('active', filterCapabilities.has(cap));
+        syncFilterButton();
+        render();
+      });
+      filterCapabilityListEl.appendChild(btn);
+    });
+
+    filterColorListEl.innerHTML = '';
+    const colorOptions = colorsInUse();
+    if (!colorOptions.length) {
+      const empty = document.createElement('p');
+      empty.className = 'filter-empty';
+      empty.textContent = 'No colors set yet.';
+      filterColorListEl.appendChild(empty);
+    }
+    colorOptions.forEach((hex) => {
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'color-swatch filter-color-swatch';
+      swatch.style.background = hex || `linear-gradient(135deg, ${DEFAULT_COLOR_1}, ${DEFAULT_COLOR_2})`;
+      swatch.title = hex || 'Default';
+      swatch.setAttribute('aria-label', hex || 'Default');
+      swatch.classList.toggle('selected', filterColors.has(hex));
+      swatch.addEventListener('click', () => {
+        toggleFilterValue(filterColors, hex);
+        swatch.classList.toggle('selected', filterColors.has(hex));
+        syncFilterButton();
+        render();
+      });
+      filterColorListEl.appendChild(swatch);
+    });
+  }
+
+  function openFilterDialog() {
+    renderFilterDialog();
+    filterDialog.showModal();
+  }
+
+  function clearFilters() {
+    filterCapabilities.clear();
+    filterColors.clear();
+    renderFilterDialog();
+    syncFilterButton();
     render();
   }
 
@@ -794,8 +905,15 @@
 
   // Tasks that end before the visible range starts have no remaining
   // duration to show, so they're left out of the timeline entirely.
+  function taskPassesFilter(t) {
+    if (filterCapabilities.size && !filterCapabilities.has(t.capability || '')) return false;
+    if (filterColors.size && !filterColors.has((t.color || '').toLowerCase())) return false;
+    return true;
+  }
+
   function visibleTasks(range) {
     return sortedTasks().filter((t) => {
+      if (!taskPassesFilter(t)) return false;
       const start = parseISODate(t.startDate);
       if (!start) return false;
       const end = addDays(start, t.durationWeeks * 7);
@@ -852,7 +970,7 @@
       editBtn.type = 'button';
       editBtn.className = 'edit-btn';
       editBtn.textContent = '✎';
-      editBtn.title = 'Edit name, start date, duration, and color';
+      editBtn.title = 'Edit name, start date, duration, color, and capability';
       editBtn.addEventListener('click', () => openEditDialog(task));
       label.appendChild(editBtn);
 
@@ -1070,6 +1188,7 @@
       durationWeeks: 1,
       order: tasks.length,
       color: '#5B8CFF',
+      capability: '',
     };
     tasks.push(newTask);
     render();
@@ -1107,6 +1226,7 @@
     editStartInput.value = task.startDate;
     editDurationInput.value = task.durationWeeks;
     editColorInput.value = task.color || DEFAULT_COLOR_1;
+    editCapabilityInput.value = task.capability || '';
     editDialog.showModal();
     editNameInput.focus();
   }
@@ -1126,6 +1246,7 @@
     if (chosen) task.startDate = formatISODate(mondayOf(chosen));
     task.durationWeeks = Math.max(1, parseInt(editDurationInput.value, 10) || 1);
     task.color = editColorInput.value || '';
+    task.capability = editCapabilityInput.value || '';
 
     render();
     scheduleSave();
@@ -1333,14 +1454,23 @@
   zoomOutBtn.addEventListener('click', zoomOut);
   syncZoomButtons();
 
-  themeToggleBtn.addEventListener('click', toggleTheme);
   applyTheme();
-
-  datesToggleBtn.addEventListener('click', toggleDatesVisible);
-  syncDatesButton();
-
-  densityToggleBtn.addEventListener('click', cycleDensity);
   applyDensity();
+
+  displayBtn.addEventListener('click', openDisplayDialog);
+  displayCloseBtn.addEventListener('click', () => displayDialog.close());
+  displayGroupButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const { group, value } = btn.dataset;
+      if (group === 'label') setLabelMode(value);
+      else if (group === 'density') setDensity(value);
+      else if (group === 'theme') setTheme(value);
+    });
+  });
+
+  filterBtn.addEventListener('click', openFilterDialog);
+  filterCloseBtn.addEventListener('click', () => filterDialog.close());
+  filterClearBtn.addEventListener('click', clearFilters);
 
   labelColResizeHandle.addEventListener('mousedown', startLabelColResize);
   applyLabelWidth();
