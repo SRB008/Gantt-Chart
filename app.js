@@ -35,6 +35,10 @@
   const LABEL_WIDTH_STORAGE_KEY = 'roadmap-gantt-label-width';
   const MIN_LABEL_WIDTH = 160;
   const MAX_LABEL_WIDTH = 480;
+  const LABEL_MODES = ['off', 'weeks', 'dates'];
+  const LABEL_MODE_TEXT = { off: 'Off', weeks: 'Weeks', dates: 'Dates' };
+  const DEFAULT_LABEL_MODE = 'dates';
+  const LABEL_MODE_STORAGE_KEY = 'roadmap-gantt-label-mode';
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
   const TITLE_STORAGE_KEY = 'roadmap-gantt-title';
@@ -117,14 +121,20 @@
     // localStorage unavailable — fall back to the default label width.
   }
 
-  let datesVisible = true;
+  let labelMode = DEFAULT_LABEL_MODE;
   try {
-    const storedDatesVisible = localStorage.getItem(DATES_STORAGE_KEY);
-    if (storedDatesVisible === 'true' || storedDatesVisible === 'false') {
-      datesVisible = storedDatesVisible === 'true';
+    const storedLabelMode = localStorage.getItem(LABEL_MODE_STORAGE_KEY);
+    if (LABEL_MODES.includes(storedLabelMode)) {
+      labelMode = storedLabelMode;
+    } else {
+      // Migrate the old on/off toggle so existing users keep their preference.
+      const storedDatesVisible = localStorage.getItem(DATES_STORAGE_KEY);
+      if (storedDatesVisible === 'true' || storedDatesVisible === 'false') {
+        labelMode = storedDatesVisible === 'true' ? 'dates' : 'off';
+      }
     }
   } catch (err) {
-    // localStorage unavailable — fall back to the default (dates on).
+    // localStorage unavailable — fall back to the default (dates label).
   }
 
   let density = DEFAULT_DENSITY;
@@ -297,10 +307,19 @@
     return Math.max(0, daysBetween(visibleStart(range, start), end) * pxPerDay() - 8);
   }
 
-  function formatBarLabel(task) {
+  function formatDatesBarLabel(task) {
     const start = parseISODate(task.startDate);
     const end = addDays(start, task.durationWeeks * 7 - 1);
     return `${formatShort(start)} – ${formatShort(end)}`;
+  }
+
+  function formatWeeksBarLabel(task) {
+    const n = task.durationWeeks;
+    return `${n} week${n === 1 ? '' : 's'}`;
+  }
+
+  function formatBarLabel(task) {
+    return labelMode === 'weeks' ? formatWeeksBarLabel(task) : formatDatesBarLabel(task);
   }
 
   function snapDaysDeltaToWeek(px) {
@@ -694,16 +713,17 @@
     document.addEventListener('mouseup', onUp);
   }
 
-  // ---------- Dates on bars ----------
+  // ---------- Bar label mode (off / weeks / dates) ----------
   function syncDatesButton() {
-    datesToggleBtn.textContent = datesVisible ? 'Dates: On' : 'Dates: Off';
-    datesToggleBtn.classList.toggle('active', datesVisible);
+    datesToggleBtn.textContent = `Label: ${LABEL_MODE_TEXT[labelMode]}`;
+    datesToggleBtn.classList.toggle('active', labelMode !== DEFAULT_LABEL_MODE);
   }
 
   function toggleDatesVisible() {
-    datesVisible = !datesVisible;
+    const idx = LABEL_MODES.indexOf(labelMode);
+    labelMode = LABEL_MODES[(idx + 1) % LABEL_MODES.length];
     try {
-      localStorage.setItem(DATES_STORAGE_KEY, String(datesVisible));
+      localStorage.setItem(LABEL_MODE_STORAGE_KEY, labelMode);
     } catch (err) {
       // ignore — persistence is a convenience, not a requirement
     }
@@ -866,7 +886,7 @@
       bar.style.width = barWidthPx(range, task) + 'px';
       applyBarColor(bar, task);
 
-      if (datesVisible) {
+      if (labelMode !== 'off') {
         const barLabel = document.createElement('span');
         barLabel.className = 'bar-label';
         barLabel.textContent = formatBarLabel(task);
@@ -1241,7 +1261,7 @@
       roundRectPath(ctx, barX, barY, barW, barH, 6);
       ctx.fill();
 
-      if (datesVisible) {
+      if (labelMode !== 'off') {
         ctx.save();
         roundRectPath(ctx, barX, barY, barW, barH, 6);
         ctx.clip();
