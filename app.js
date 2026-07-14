@@ -23,8 +23,7 @@
     { name: 'Purple', hex: '#DC60C3' },
   ];
   const CAPABILITY_OPTIONS = [
-    'Sales', 'Fulfilment', 'Production', 'Payment', 'Customer Service',
-    'Self Serve', 'UX and UI', 'Verfication', 'Technology',
+    'Customer Service', 'Fulfilment', 'Payment', 'Production', 'Sales', 'Self Serve', 'Technology', 'UX and UI', 'Verfication',
   ];
   const VIEW_MODES = ['week', 'month', 'quarter'];
   const DEFAULT_VIEW_MODE = 'week';
