@@ -64,22 +64,8 @@ body {
 }
 
 #page-title {
-  cursor: text;
-  outline: none;
   padding: 4px 8px;
   margin: -4px -8px;
-  border-radius: 6px;
-  min-width: 24px;
-}
-
-#page-title:hover,
-#page-title:focus {
-  background: var(--panel-alt);
-}
-
-#page-title:empty::before {
-  content: attr(data-placeholder);
-  color: var(--muted);
 }
 
 .topbar-actions {

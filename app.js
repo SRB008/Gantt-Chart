@@ -41,7 +41,6 @@
   const LABEL_MODE_STORAGE_KEY = 'roadmap-gantt-label-mode';
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
-  const TITLE_STORAGE_KEY = 'roadmap-gantt-title';
   const CSV_HEADERS = ['id', 'name', 'startDate', 'durationWeeks', 'order', 'color'];
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
   const DB_NAME = 'roadmap-gantt';
@@ -547,6 +546,7 @@
     const needsMigration = isLegacyCsv(text);
     tasks = parseCsv(text);
     setFileStatus('Connected: ' + fileHandle.name, 'connected');
+    applyPageTitleFromFile(fileHandle.name);
     showGantt(true);
     render();
 
@@ -768,28 +768,19 @@
   }
 
   // ---------- Page title ----------
-  function loadPageTitle() {
-    let saved = '';
-    try {
-      saved = localStorage.getItem(TITLE_STORAGE_KEY) || '';
-    } catch (err) {
-      // ignore — persistence is a convenience, not a requirement
-    }
-    if (saved) {
-      pageTitleEl.textContent = saved;
-      document.title = saved;
-    }
+  // Derives the chart title from the connected file's name so the chart is
+  // always labeled after the project it represents, e.g. "roadmap.csv" -> "Roadmap".
+  function titleFromFileName(fileName) {
+    const base = fileName.replace(/\.csv$/i, '');
+    const words = base.split(/[\s_-]+/).filter(Boolean);
+    if (!words.length) return 'Project';
+    return words.map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
   }
 
-  function savePageTitle() {
-    const text = pageTitleEl.textContent.replace(/\s+/g, ' ').trim();
-    pageTitleEl.textContent = text || 'Project';
-    document.title = pageTitleEl.textContent;
-    try {
-      localStorage.setItem(TITLE_STORAGE_KEY, pageTitleEl.textContent);
-    } catch (err) {
-      // ignore — persistence is a convenience, not a requirement
-    }
+  function applyPageTitleFromFile(fileName) {
+    const title = titleFromFileName(fileName);
+    pageTitleEl.textContent = title;
+    document.title = title;
   }
 
   // ---------- Rendering ----------
@@ -1363,15 +1354,6 @@
     }
   });
   syncTimelineStartInput();
-
-  pageTitleEl.addEventListener('blur', savePageTitle);
-  pageTitleEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      pageTitleEl.blur();
-    }
-  });
-  loadPageTitle();
 
   if (!supportsFSA) {
     unsupportedBanner.hidden = false;
