@@ -1258,6 +1258,7 @@
       border: '#d7dae0',
       text: '#16181d',
       muted: '#5b6472',
+      accent: '#3b6fe0',
     };
 
     ctx.fillStyle = colors.bg;
@@ -1348,7 +1349,7 @@
     const today = startOfDay(new Date());
     if (today >= range.start && today < range.end) {
       const todayX = labelWidth + xForDate(range, today);
-      ctx.strokeStyle = colors.muted;
+      ctx.strokeStyle = colors.accent;
       ctx.lineWidth = 2;
       ctx.setLineDash([2, 3]);
       ctx.beginPath();

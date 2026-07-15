@@ -249,7 +249,7 @@ body {
   top: 0;
   bottom: 0;
   width: 0;
-  border-left: 2px dotted var(--muted);
+  border-left: 2px dotted var(--accent);
   z-index: 6;
   pointer-events: none;
 }
