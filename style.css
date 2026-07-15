@@ -239,8 +239,19 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
+  position: relative;
   /* No overflow:hidden here — that would make .gantt itself the sticky
      scrollport instead of .gantt-wrap, breaking the frozen label column. */
+}
+
+.today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dotted var(--muted);
+  z-index: 6;
+  pointer-events: none;
 }
 
 .gantt-header-row {
@@ -353,16 +364,17 @@ body {
   background: var(--panel);
 }
 
-.drag-handle {
-  cursor: grab;
-  color: var(--muted);
-  font-size: 14px;
-  padding: 4px 2px;
-  user-select: none;
-  line-height: 1;
+.phase-icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin: 0 2px;
+  display: block;
 }
 
-.drag-handle:active { cursor: grabbing; }
+:root[data-theme="dark"] .phase-icon {
+  filter: invert(1) brightness(1.7);
+}
 
 .task-name {
   flex: 1;
@@ -661,5 +673,5 @@ body {
     zoom: var(--print-scale, 1);
   }
 
-  .drag-handle, .delete-btn, .edit-btn, .resize-handle, .col-resize-handle { display: none !important; }
+  .delete-btn, .edit-btn, .resize-handle, .col-resize-handle { display: none !important; }
 }
