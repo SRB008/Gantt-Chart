@@ -25,6 +25,15 @@
   const CAPABILITY_OPTIONS = [
     'Customer Service', 'Fulfilment', 'Payment', 'Production', 'Sales', 'Self Serve', 'Technology', 'UX and UI', 'Verfication',
   ];
+  const PHASE_OPTIONS = ['Not Started', 'Discovery', 'Build', 'Test', 'Complete'];
+  const DEFAULT_PHASE = 'Not Started';
+  const PHASE_ICON_FILES = {
+    'Not Started': 'circle-0.svg',
+    'Discovery': 'circle-2.svg',
+    'Build': 'circle-4.svg',
+    'Test': 'circle-6.svg',
+    'Complete': 'circle-8.svg',
+  };
   const VIEW_MODES = ['week', 'month', 'quarter'];
   const DEFAULT_VIEW_MODE = 'week';
   const VIEW_STORAGE_KEY = 'roadmap-gantt-view-mode';
@@ -60,6 +69,7 @@
   const unsupportedBanner = document.getElementById('unsupported-banner');
   const emptyState = document.getElementById('empty-state');
   const ganttEl = document.getElementById('gantt');
+  const todayLineEl = document.getElementById('today-line');
   const viewButtons = Array.from(document.querySelectorAll('.topbar-actions > .view-toggle > .view-btn'));
 
   const editDialog = document.getElementById('edit-dialog');
@@ -69,6 +79,7 @@
   const editDurationInput = document.getElementById('edit-duration');
   const editColorInput = document.getElementById('edit-color');
   const editCapabilityInput = document.getElementById('edit-capability');
+  const editPhaseInput = document.getElementById('edit-phase');
   const editColorPresetsEl = document.getElementById('edit-color-presets');
   const editCancelBtn = document.getElementById('edit-cancel-btn');
   const pageTitleEl = document.getElementById('page-title');
@@ -415,6 +426,7 @@
         order: Number.isFinite(row.order) ? row.order : 0,
         color: row.color || '',
         capability: row.capability || '',
+        phase: PHASE_OPTIONS.includes(row.phase) ? row.phase : DEFAULT_PHASE,
       };
     });
     result.sort((a, b) => a.order - b.order);
@@ -431,6 +443,7 @@
       order: t.order,
       color: t.color,
       capability: t.capability,
+      phase: t.phase,
     }));
     return JSON.stringify(data, null, 2) + '\n';
   }
@@ -454,6 +467,7 @@
       order: idx,
       color: '',
       capability: '',
+      phase: DEFAULT_PHASE,
     }));
     return serializeJson(seedTasks);
   }
@@ -862,6 +876,16 @@
     });
   }
 
+  function renderTodayLine(range) {
+    const today = startOfDay(new Date());
+    if (today < range.start || today >= range.end) {
+      todayLineEl.hidden = true;
+      return;
+    }
+    todayLineEl.hidden = false;
+    todayLineEl.style.left = (labelWidth + xForDate(range, today)) + 'px';
+  }
+
   function render() {
     const range = computeTimelineRange();
     const columns = buildColumns(range);
@@ -869,6 +893,8 @@
 
     renderColumnCells(sprintHeaderEl, columns, true);
     sprintHeaderEl.style.width = totalWidth + 'px';
+
+    renderTodayLine(range);
 
     taskRowsEl.innerHTML = '';
     rowRefs = new Map();
@@ -881,11 +907,13 @@
       const label = document.createElement('div');
       label.className = 'task-label';
 
-      const handle = document.createElement('span');
-      handle.className = 'drag-handle';
-      handle.title = 'Drag the bar to move it in time or reorder rows';
-      handle.textContent = '⋮⋮';
-      label.appendChild(handle);
+      const phaseIcon = document.createElement('img');
+      phaseIcon.className = 'phase-icon';
+      const phase = PHASE_OPTIONS.includes(task.phase) ? task.phase : DEFAULT_PHASE;
+      phaseIcon.src = PHASE_ICON_FILES[phase];
+      phaseIcon.alt = phase;
+      phaseIcon.title = `Phase: ${phase}`;
+      label.appendChild(phaseIcon);
 
       const nameInput = document.createElement('input');
       nameInput.className = 'task-name';
@@ -900,7 +928,7 @@
       editBtn.type = 'button';
       editBtn.className = 'edit-btn';
       editBtn.textContent = '✎';
-      editBtn.title = 'Edit name, start date, duration, color, and capability';
+      editBtn.title = 'Edit name, start date, duration, color, capability, and phase';
       editBtn.addEventListener('click', () => openEditDialog(task));
       label.appendChild(editBtn);
 
@@ -1119,6 +1147,7 @@
       order: tasks.length,
       color: '#5B8CFF',
       capability: '',
+      phase: DEFAULT_PHASE,
     };
     tasks.push(newTask);
     render();
@@ -1157,6 +1186,7 @@
     editDurationInput.value = task.durationWeeks;
     editColorInput.value = task.color || DEFAULT_COLOR_1;
     editCapabilityInput.value = task.capability || '';
+    editPhaseInput.value = task.phase || DEFAULT_PHASE;
     editDialog.showModal();
     editNameInput.focus();
   }
@@ -1177,6 +1207,7 @@
     task.durationWeeks = Math.max(1, parseInt(editDurationInput.value, 10) || 1);
     task.color = editColorInput.value || '';
     task.capability = editCapabilityInput.value || '';
+    task.phase = editPhaseInput.value || DEFAULT_PHASE;
 
     render();
     scheduleSave();
@@ -1313,6 +1344,20 @@
         ctx.restore();
       }
     });
+
+    const today = startOfDay(new Date());
+    if (today >= range.start && today < range.end) {
+      const todayX = labelWidth + xForDate(range, today);
+      ctx.strokeStyle = colors.muted;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(todayX, 0);
+      ctx.lineTo(todayX, height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1;
+    }
 
     return canvas;
   }
