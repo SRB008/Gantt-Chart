@@ -95,6 +95,7 @@
   const filterCloseBtn = document.getElementById('filter-close-btn');
   const filterClearBtn = document.getElementById('filter-clear-btn');
   const filterCapabilityListEl = document.getElementById('filter-capability-list');
+  const filterPhaseListEl = document.getElementById('filter-phase-list');
   const filterColorListEl = document.getElementById('filter-color-list');
   const timelineStartInput = document.getElementById('timeline-start-input');
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
@@ -107,6 +108,7 @@
 
   // '' represents tasks with no capability / no color set.
   let filterCapabilities = new Set();
+  let filterPhases = new Set();
   let filterColors = new Set();
 
   let viewMode = DEFAULT_VIEW_MODE;
@@ -728,6 +730,11 @@
     return ordered;
   }
 
+  function phasesInUse() {
+    const present = new Set(tasks.map((t) => (PHASE_OPTIONS.includes(t.phase) ? t.phase : DEFAULT_PHASE)));
+    return PHASE_OPTIONS.filter((p) => present.has(p));
+  }
+
   function colorsInUse() {
     const present = new Set(tasks.map((t) => (t.color || '').toLowerCase()));
     const ordered = [...present].filter((c) => c).sort();
@@ -741,7 +748,7 @@
   }
 
   function syncFilterButton() {
-    filterBtn.classList.toggle('active', filterCapabilities.size > 0 || filterColors.size > 0);
+    filterBtn.classList.toggle('active', filterCapabilities.size > 0 || filterPhases.size > 0 || filterColors.size > 0);
   }
 
   function renderFilterDialog() {
@@ -766,6 +773,29 @@
         render();
       });
       filterCapabilityListEl.appendChild(btn);
+    });
+
+    filterPhaseListEl.innerHTML = '';
+    const phaseOptions = phasesInUse();
+    if (!phaseOptions.length) {
+      const empty = document.createElement('p');
+      empty.className = 'filter-empty';
+      empty.textContent = 'No phases set yet.';
+      filterPhaseListEl.appendChild(empty);
+    }
+    phaseOptions.forEach((phase) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-option-btn';
+      btn.textContent = phase;
+      btn.classList.toggle('active', filterPhases.has(phase));
+      btn.addEventListener('click', () => {
+        toggleFilterValue(filterPhases, phase);
+        btn.classList.toggle('active', filterPhases.has(phase));
+        syncFilterButton();
+        render();
+      });
+      filterPhaseListEl.appendChild(btn);
     });
 
     filterColorListEl.innerHTML = '';
@@ -801,6 +831,7 @@
 
   function clearFilters() {
     filterCapabilities.clear();
+    filterPhases.clear();
     filterColors.clear();
     renderFilterDialog();
     syncFilterButton();
@@ -851,6 +882,7 @@
   // duration to show, so they're left out of the timeline entirely.
   function taskPassesFilter(t) {
     if (filterCapabilities.size && !filterCapabilities.has(t.capability || '')) return false;
+    if (filterPhases.size && !filterPhases.has(PHASE_OPTIONS.includes(t.phase) ? t.phase : DEFAULT_PHASE)) return false;
     if (filterColors.size && !filterColors.has((t.color || '').toLowerCase())) return false;
     return true;
   }
