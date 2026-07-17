@@ -270,16 +270,11 @@ function parseMilestones(rawRows) {
 function monthKey(d) { return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`; }
 function monthLabel(y, m) { return `${MONTH_NAMES[m]} ${y}`; }
 
-function buildMonthRange(milestones) {
-  const keys = milestones.map(m => ({ y: m.finish.getUTCFullYear(), m: m.finish.getUTCMonth() }));
-  let min = keys[0], max = keys[0];
-  for (const k of keys) {
-    if (k.y < min.y || (k.y === min.y && k.m < min.m)) min = k;
-    if (k.y > max.y || (k.y === max.y && k.m > max.m)) max = k;
-  }
+function buildMonthRange() {
+  const now = new Date();
+  let y = now.getUTCFullYear(), m = now.getUTCMonth();
   const months = [];
-  let y = min.y, m = min.m;
-  while (y < max.y || (y === max.y && m <= max.m)) {
+  for (let i = 0; i < 6; i++) {
     months.push({ y, m });
     m++; if (m > 11) { m = 0; y++; }
   }
@@ -297,7 +292,7 @@ function render(milestones) {
   }
   emptyState.style.display = "none";
 
-  const months = buildMonthRange(milestones);
+  const months = buildMonthRange();
   const grouped = new Map();
   months.forEach(({ y, m }) => grouped.set(`${y}-${String(m + 1).padStart(2, "0")}`, []));
   milestones.forEach(ms => {
