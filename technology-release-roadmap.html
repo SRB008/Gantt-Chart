@@ -360,7 +360,7 @@ function loadJSONText(text, label) {
   }
 }
 
-document.getElementById("refresh-btn").addEventListener("click", async () => {
+async function refreshFromLastSource() {
   if (activeFileHandle) {
     try {
       const file = await activeFileHandle.getFile();
@@ -375,9 +375,12 @@ document.getElementById("refresh-btn").addEventListener("click", async () => {
   const label = localStorage.getItem("milestones_last_label");
   if (!text) { showError("No previously loaded file to reload."); return; }
   loadJSONText(text, label || "reloaded data");
-});
+}
+
+document.getElementById("refresh-btn").addEventListener("click", refreshFromLastSource);
 
 loadJSONText(JSON.stringify(DEFAULT_DATA), "roadmap.json (sample data)");
+refreshFromLastSource();
 </script>
 </body>
 </html>
