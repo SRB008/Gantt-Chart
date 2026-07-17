@@ -55,6 +55,27 @@
     margin: 0;
     margin-right: auto;
   }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { filter: brightness(0.95); }
+  .btn.secondary {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
 
   #error-banner {
     display: none;
@@ -157,6 +178,7 @@
 
 <header>
   <h1>Technology Release Roadmap</h1>
+  <button class="btn secondary" id="refresh-btn">Refresh</button>
 </header>
 
 <div id="error-banner"></div>
@@ -329,6 +351,8 @@ function showError(msg) {
   banner.style.display = msg ? "block" : "none";
 }
 
+let activeFileHandle = null;
+
 function loadJSONText(text, label) {
   try {
     const rows = parseJSONData(text);
@@ -340,6 +364,23 @@ function loadJSONText(text, label) {
     showError(`Could not load file: ${err.message}`);
   }
 }
+
+document.getElementById("refresh-btn").addEventListener("click", async () => {
+  if (activeFileHandle) {
+    try {
+      const file = await activeFileHandle.getFile();
+      const text = await file.text();
+      loadJSONText(text, file.name);
+    } catch (err) {
+      showError("Could not reload file: " + err.message);
+    }
+    return;
+  }
+  const text = localStorage.getItem("milestones_last_json");
+  const label = localStorage.getItem("milestones_last_label");
+  if (!text) { showError("No previously loaded file to reload."); return; }
+  loadJSONText(text, label || "reloaded data");
+});
 
 loadJSONText(JSON.stringify(DEFAULT_DATA), "roadmap.json (sample data)");
 </script>
