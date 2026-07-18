@@ -641,6 +641,45 @@ body {
   outline-offset: 2px;
 }
 
+.cleanup-dialog {
+  width: 380px;
+}
+
+.cleanup-warning {
+  margin: -6px 0 10px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.cleanup-task-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cleanup-task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.cleanup-task-item .cleanup-task-dates {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 @media print {
   @page {
     size: landscape;

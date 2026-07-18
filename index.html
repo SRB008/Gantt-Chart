@@ -32,6 +32,7 @@
       <button id="autosort-btn" class="btn" disabled>Auto Sort</button>
       <button id="filter-btn" class="btn" title="Filter which task bars are shown, by capability and color">Filter</button>
       <button id="display-btn" class="btn" title="Change label, density, and theme display options">Display</button>
+      <button id="cleanup-btn" class="btn" disabled title="Find tasks that have already finished and remove them">Data Clean Up</button>
       <button id="backup-data-btn" class="btn" disabled title="Download a backup copy of the project JSON file">Back Up Data</button>
       <button id="export-png-btn" class="btn" disabled>Export PNG</button>
       <button id="export-pdf-btn" class="btn" disabled>Export PDF</button>
@@ -158,6 +159,17 @@
     <div class="edit-dialog-actions">
       <button type="button" id="filter-clear-btn" class="btn">Clear</button>
       <button type="button" id="filter-close-btn" class="btn btn-primary">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="cleanup-dialog" class="edit-dialog cleanup-dialog">
+    <h2>Data Clean Up</h2>
+    <p class="cleanup-warning"><strong>Don't forget to take a back up!</strong></p>
+    <p id="cleanup-hint" class="filter-hint">These tasks have already finished. Remove them?</p>
+    <ul id="cleanup-task-list" class="cleanup-task-list"></ul>
+    <div class="edit-dialog-actions">
+      <button type="button" id="cleanup-cancel-btn" class="btn">Cancel</button>
+      <button type="button" id="cleanup-ok-btn" class="btn btn-primary">OK</button>
     </div>
   </dialog>
 

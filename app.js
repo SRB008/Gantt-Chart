@@ -98,6 +98,12 @@
   const filterCapabilityListEl = document.getElementById('filter-capability-list');
   const filterPhaseListEl = document.getElementById('filter-phase-list');
   const filterColorListEl = document.getElementById('filter-color-list');
+  const cleanupBtn = document.getElementById('cleanup-btn');
+  const cleanupDialog = document.getElementById('cleanup-dialog');
+  const cleanupHintEl = document.getElementById('cleanup-hint');
+  const cleanupTaskListEl = document.getElementById('cleanup-task-list');
+  const cleanupCancelBtn = document.getElementById('cleanup-cancel-btn');
+  const cleanupOkBtn = document.getElementById('cleanup-ok-btn');
   const timelineStartInput = document.getElementById('timeline-start-input');
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
@@ -485,6 +491,7 @@
     emptyState.hidden = show;
     ganttEl.hidden = !show;
     addTaskBtn.disabled = !show;
+    cleanupBtn.disabled = !show;
     backupDataBtn.disabled = !show;
     exportPngBtn.disabled = !show;
     exportPdfBtn.disabled = !show;
@@ -1157,6 +1164,59 @@
     scheduleSave();
   }
 
+  // ---------- Data clean up (remove finished tasks) ----------
+  function taskEndDate(task) {
+    const start = parseISODate(task.startDate);
+    if (!start) return null;
+    return addDays(start, task.durationWeeks * 7);
+  }
+
+  function finishedTasks() {
+    const today = startOfDay(new Date());
+    return tasks
+      .filter((t) => {
+        const end = taskEndDate(t);
+        return end && end <= today;
+      })
+      .sort((a, b) => taskEndDate(a) - taskEndDate(b));
+  }
+
+  function openCleanupDialog() {
+    const finished = finishedTasks();
+    cleanupTaskListEl.innerHTML = '';
+
+    if (!finished.length) {
+      cleanupHintEl.textContent = 'No finished tasks found — nothing to remove.';
+      cleanupOkBtn.hidden = true;
+    } else {
+      cleanupHintEl.textContent = 'These tasks have already finished. Remove them?';
+      cleanupOkBtn.hidden = false;
+      finished.forEach((t) => {
+        const li = document.createElement('li');
+        li.className = 'cleanup-task-item';
+        const name = document.createElement('span');
+        name.textContent = t.name || '(untitled)';
+        const dates = document.createElement('span');
+        dates.className = 'cleanup-task-dates';
+        dates.textContent = formatDatesBarLabel(t);
+        li.appendChild(name);
+        li.appendChild(dates);
+        cleanupTaskListEl.appendChild(li);
+      });
+    }
+
+    cleanupDialog.showModal();
+  }
+
+  function confirmCleanup() {
+    const finishedIds = new Set(finishedTasks().map((t) => t.id));
+    tasks = tasks.filter((t) => !finishedIds.has(t.id));
+    sortedTasks().forEach((t, idx) => (t.order = idx));
+    cleanupDialog.close();
+    render();
+    scheduleSave();
+  }
+
   function autoSortTasks() {
     tasks
       .slice()
@@ -1493,6 +1553,10 @@
   filterBtn.addEventListener('click', openFilterDialog);
   filterCloseBtn.addEventListener('click', () => filterDialog.close());
   filterClearBtn.addEventListener('click', clearFilters);
+
+  cleanupBtn.addEventListener('click', openCleanupDialog);
+  cleanupCancelBtn.addEventListener('click', () => cleanupDialog.close());
+  cleanupOkBtn.addEventListener('click', confirmCleanup);
 
   labelColResizeHandle.addEventListener('mousedown', startLabelColResize);
   applyLabelWidth();
