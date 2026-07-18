@@ -59,6 +59,7 @@
   const sprintHeaderEl = document.getElementById('sprint-header');
   const taskRowsEl = document.getElementById('task-rows');
   const addTaskBtn = document.getElementById('add-task-btn');
+  const backupDataBtn = document.getElementById('backup-data-btn');
   const exportPngBtn = document.getElementById('export-png-btn');
   const exportPdfBtn = document.getElementById('export-pdf-btn');
   const autosortBtn = document.getElementById('autosort-btn');
@@ -484,6 +485,7 @@
     emptyState.hidden = show;
     ganttEl.hidden = !show;
     addTaskBtn.disabled = !show;
+    backupDataBtn.disabled = !show;
     exportPngBtn.disabled = !show;
     exportPdfBtn.disabled = !show;
     autosortBtn.disabled = !show;
@@ -1395,6 +1397,17 @@
     return canvas;
   }
 
+  function backupData() {
+    const blob = new Blob([serializeJson(tasks)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const stamp = formatISODate(new Date());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = baseFileName() + '-backup-' + stamp + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function exportPng() {
     const canvas = drawGanttToCanvas();
     canvas.toBlob((blob) => {
@@ -1453,6 +1466,7 @@
   autosortBtn.addEventListener('click', autoSortTasks);
   openFileBtn.addEventListener('click', openExisting);
   newFileBtn.addEventListener('click', createNew);
+  backupDataBtn.addEventListener('click', backupData);
   exportPngBtn.addEventListener('click', exportPng);
   exportPdfBtn.addEventListener('click', exportPdf);
   viewButtons.forEach((btn) => btn.addEventListener('click', () => setViewMode(btn.dataset.view)));
