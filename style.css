@@ -61,7 +61,6 @@ body {
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   gap: 10px;
-  flex: 0 0 auto;
 }
 
 .topbar h1 {
@@ -651,6 +650,57 @@ body {
   outline-offset: 2px;
 }
 
+.capabilities-dialog {
+  width: 360px;
+}
+
+.capabilities-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.capabilities-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.capabilities-item input[type="text"] {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.capabilities-item .delete-btn {
+  font-size: 18px;
+}
+
+.capabilities-add-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.capabilities-add-form input[type="text"] {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 13px;
+}
+
 .cleanup-dialog {
   width: 380px;
 }
@@ -711,11 +761,13 @@ body {
     color-adjust: exact !important;
   }
 
+  html, body { height: auto; }
+
   body { background: #fff; display: block; }
 
   .topbar, .banner, #empty-state { display: none !important; }
 
-  .gantt-wrap { padding: 0; overflow: visible; height: auto; }
+  .gantt-wrap { padding: 0; overflow: visible; flex: none; }
 
   .gantt {
     border: none;

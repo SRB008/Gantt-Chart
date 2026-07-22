@@ -15,16 +15,16 @@
   const DEFAULT_COLOR_1 = '#5b8cff';
   const DEFAULT_COLOR_2 = '#7c5cff';
   const PRESET_COLORS = [
-    { name: 'Red', hex: '#ff4853' },
-    { name: 'Orange', hex: '#ff8b3e' },
-    { name: 'Yellow', hex: '#ffd505' },
-    { name: 'Green', hex: '#4fce65' },
-    { name: 'Blue', hex: '#5b8cff' },
-    { name: 'Purple', hex: '#dc60c3' },
-    { name: 'Light Grey', hex: '#dedede' },
-    { name: 'Grey', hex: '#b1b1b1' },
+    { name: 'Red', hex: '#FF4853' },
+    { name: 'Orange', hex: '#FF8B3E' },
+    { name: 'Yellow', hex: '#FFD505' },
+    { name: 'Green', hex: '#4FCE65' },
+    { name: 'Blue', hex: '#5B8CFF' },
+    { name: 'Purple', hex: '#DC60C3' },
+    { name: 'Light Grey', hex: '#DEDEDE' },
+    { name: 'Grey', hex: '#B1B1B1' },
   ];
-  const CAPABILITY_OPTIONS = [
+  const DEFAULT_CAPABILITY_OPTIONS = [
     'Customer Service', 'Fulfilment', 'Payment', 'Production', 'Sales', 'Self Serve', 'Technology', 'UX and UI', 'Verfication',
   ];
   const PHASE_OPTIONS = ['Not Started', 'Discovery', 'Build', 'Test', 'Complete'];
@@ -54,9 +54,9 @@
   const DATES_STORAGE_KEY = 'roadmap-gantt-dates-visible';
   const TIMELINE_START_STORAGE_KEY = 'roadmap-gantt-timeline-start';
   const PRINT_PAGE_WIDTH_PX = 1050; // approx usable width for a landscape page at 96dpi
-  const SUPABASE_URL = 'https://qkkcvbafkderoxlxvjww.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_FzDjgkUIrncKMuyt253GsA_qK2fGKH1';
-  const TABLE = 'roadmap_tasks';
+  const DB_NAME = 'roadmap-gantt';
+  const DB_STORE = 'handles';
+  const DB_KEY = 'roadmapFileHandle';
 
   const sprintHeaderEl = document.getElementById('sprint-header');
   const taskRowsEl = document.getElementById('task-rows');
@@ -65,8 +65,11 @@
   const exportPngBtn = document.getElementById('export-png-btn');
   const exportPdfBtn = document.getElementById('export-pdf-btn');
   const autosortBtn = document.getElementById('autosort-btn');
+  const openFileBtn = document.getElementById('open-file-btn');
+  const newFileBtn = document.getElementById('new-file-btn');
   const saveStatusEl = document.getElementById('save-status');
   const fileStatusEl = document.getElementById('file-status');
+  const unsupportedBanner = document.getElementById('unsupported-banner');
   const emptyState = document.getElementById('empty-state');
   const ganttEl = document.getElementById('gantt');
   const todayLineEl = document.getElementById('today-line');
@@ -82,6 +85,7 @@
   const editPhaseInput = document.getElementById('edit-phase');
   const editColorPresetsEl = document.getElementById('edit-color-presets');
   const editCancelBtn = document.getElementById('edit-cancel-btn');
+  const pageTitleEl = document.getElementById('page-title');
   const zoomInBtn = document.getElementById('zoom-in-btn');
   const zoomOutBtn = document.getElementById('zoom-out-btn');
   const zoomLevelEl = document.getElementById('zoom-level');
@@ -96,6 +100,12 @@
   const filterCapabilityListEl = document.getElementById('filter-capability-list');
   const filterPhaseListEl = document.getElementById('filter-phase-list');
   const filterColorListEl = document.getElementById('filter-color-list');
+  const capabilitiesBtn = document.getElementById('capabilities-btn');
+  const capabilitiesDialog = document.getElementById('capabilities-dialog');
+  const capabilitiesListEl = document.getElementById('capabilities-list');
+  const capabilitiesAddForm = document.getElementById('capabilities-add-form');
+  const capabilitiesAddInput = document.getElementById('capabilities-add-input');
+  const capabilitiesCloseBtn = document.getElementById('capabilities-close-btn');
   const cleanupBtn = document.getElementById('cleanup-btn');
   const cleanupDialog = document.getElementById('cleanup-dialog');
   const cleanupHintEl = document.getElementById('cleanup-hint');
@@ -105,12 +115,11 @@
   const timelineStartInput = document.getElementById('timeline-start-input');
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
   let tasks = [];
+  let capabilityOptions = DEFAULT_CAPABILITY_OPTIONS.slice();
   let saveTimer = null;
   let rowRefs = new Map(); // id -> { rowEl, barEl }
-  let deletedTaskIds = new Set();
+  let fileHandle = null;
   let editingTaskId = null;
 
   // '' represents tasks with no capability / no color set.
@@ -192,6 +201,8 @@
   } catch (err) {
     // localStorage unavailable — fall back to the default timeline start.
   }
+
+  const supportsFSA = 'showOpenFilePicker' in window && 'showSaveFilePicker' in window;
 
   // ---------- Date helpers ----------
   function startOfDay(d) {
@@ -381,46 +392,109 @@
     bar.style.background = c1;
   }
 
-  // ---------- Supabase row <-> task mapping ----------
-  function rowToTask(row) {
-    const parsed = parseISODate(row.start_date) || mondayOf(new Date());
-    return {
-      id: String(row.id),
-      name: row.name || '',
-      startDate: formatISODate(mondayOf(parsed)),
-      durationWeeks: Math.max(1, parseInt(row.duration_weeks, 10) || 1),
-      order: Number.isFinite(row.sort_order) ? row.sort_order : 0,
-      color: row.color || '',
-      capability: row.capability || '',
-      phase: PHASE_OPTIONS.includes(row.phase) ? row.phase : DEFAULT_PHASE,
-    };
+  // ---------- IndexedDB (persist the file handle across reloads) ----------
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
   }
 
-  function taskToRow(t) {
-    return {
-      id: t.id,
-      name: t.name,
-      start_date: t.startDate,
-      duration_weeks: t.durationWeeks,
-      sort_order: t.order,
-      color: t.color,
-      capability: t.capability,
-      phase: t.phase,
-    };
+  async function idbSet(key, value) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, 'readwrite');
+      tx.objectStore(DB_STORE).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   }
 
-  function serializeJson(list) {
+  async function idbGet(key) {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, 'readonly');
+      const req = tx.objectStore(DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  // ---------- JSON ----------
+  // Accepts both the legacy format (a plain array of tasks, with the
+  // capability list only ever living in app.js) and the current format
+  // (an object with "capabilities" and "tasks"), so old project files keep
+  // opening without a manual migration step.
+  function parseJson(text) {
+    const raw = text.trim();
+    if (!raw) return { capabilities: DEFAULT_CAPABILITY_OPTIONS.slice(), tasks: [] };
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      throw new Error('Invalid JSON: ' + err.message);
+    }
+
+    let rawTasks;
+    let rawCapabilities;
+    if (Array.isArray(data)) {
+      rawTasks = data;
+      rawCapabilities = DEFAULT_CAPABILITY_OPTIONS;
+    } else if (data && Array.isArray(data.tasks)) {
+      rawTasks = data.tasks;
+      rawCapabilities = Array.isArray(data.capabilities) ? data.capabilities : DEFAULT_CAPABILITY_OPTIONS;
+    } else {
+      throw new Error('Expected a JSON array of tasks, or an object with a "tasks" array.');
+    }
+
+    const capabilities = [];
+    rawCapabilities.forEach((c) => {
+      const name = typeof c === 'string' ? c.trim() : '';
+      if (name && !capabilities.includes(name)) capabilities.push(name);
+    });
+
+    const result = rawTasks.map((row) => {
+      const parsed = parseISODate(row.startDate) || mondayOf(new Date());
+      return {
+        id: row.id != null ? String(row.id) : uid(),
+        name: row.name || '',
+        startDate: formatISODate(mondayOf(parsed)),
+        durationWeeks: Math.max(1, parseInt(row.durationWeeks, 10) || 1),
+        order: Number.isFinite(row.order) ? row.order : 0,
+        color: row.color || '',
+        capability: row.capability || '',
+        phase: PHASE_OPTIONS.includes(row.phase) ? row.phase : DEFAULT_PHASE,
+      };
+    });
+    result.sort((a, b) => a.order - b.order);
+
+    // A task can reference a capability that was removed from the managed
+    // list (e.g. an older file edited outside the app) — keep it selectable
+    // instead of silently dropping the value.
+    result.forEach((t) => {
+      if (t.capability && !capabilities.includes(t.capability)) capabilities.push(t.capability);
+    });
+
+    return { capabilities, tasks: result };
+  }
+
+  function serializeJson(list, capabilities) {
     const sorted = [...list].sort((a, b) => a.order - b.order);
-    const data = sorted.map((t) => ({
-      id: t.id,
-      name: t.name,
-      startDate: t.startDate,
-      durationWeeks: t.durationWeeks,
-      order: t.order,
-      color: t.color,
-      capability: t.capability,
-      phase: t.phase,
-    }));
+    const data = {
+      capabilities: capabilities.slice(),
+      tasks: sorted.map((t) => ({
+        id: t.id,
+        name: t.name,
+        startDate: t.startDate,
+        durationWeeks: t.durationWeeks,
+        order: t.order,
+        color: t.color,
+        capability: t.capability,
+        phase: t.phase,
+      })),
+    };
     return JSON.stringify(data, null, 2) + '\n';
   }
 
@@ -433,21 +507,22 @@
     { name: 'Launch', startWeekOffset: 12, durationWeeks: 1 },
   ];
 
-  function buildSeedTasks() {
+  function buildSeedJson() {
     const anchor = mondayOf(new Date());
-    return SEED_TASKS.map((t, idx) => ({
-      id: uid(),
+    const seedTasks = SEED_TASKS.map((t, idx) => ({
+      id: String(idx + 1),
       name: t.name,
       startDate: formatISODate(addDays(anchor, t.startWeekOffset * 7)),
       durationWeeks: t.durationWeeks,
       order: idx,
-      color: '',
+      color: DEFAULT_COLOR_1,
       capability: '',
       phase: DEFAULT_PHASE,
     }));
+    return serializeJson(seedTasks, DEFAULT_CAPABILITY_OPTIONS.slice());
   }
 
-  // ---------- Supabase connection ----------
+  // ---------- File connection ----------
   function setFileStatus(text, cls) {
     fileStatusEl.textContent = text;
     fileStatusEl.className = 'file-status' + (cls ? ' ' + cls : '');
@@ -457,6 +532,7 @@
     emptyState.hidden = show;
     ganttEl.hidden = !show;
     addTaskBtn.disabled = !show;
+    capabilitiesBtn.disabled = !show;
     cleanupBtn.disabled = !show;
     backupDataBtn.disabled = !show;
     exportPngBtn.disabled = !show;
@@ -464,33 +540,96 @@
     autosortBtn.disabled = !show;
   }
 
-  async function loadTasks() {
-    setFileStatus('Connecting...', '');
-    const { data, error } = await supabaseClient
-      .from(TABLE)
-      .select('*')
-      .order('sort_order', { ascending: true });
+  async function verifyPermission(handle, mode) {
+    const opts = { mode };
+    if ((await handle.queryPermission(opts)) === 'granted') return true;
+    if ((await handle.requestPermission(opts)) === 'granted') return true;
+    return false;
+  }
 
-    if (error) {
-      console.error(error);
-      setFileStatus('Connection error', 'error');
-      emptyState.querySelector('p').textContent = 'Could not load the roadmap: ' + error.message;
-      return;
+  async function connectHandle(handle, { seedIfEmpty } = {}) {
+    const ok = await verifyPermission(handle, 'readwrite');
+    if (!ok) {
+      setFileStatus('Permission denied', 'error');
+      return false;
+    }
+    fileHandle = handle;
+    await idbSet(DB_KEY, handle);
+
+    const file = await fileHandle.getFile();
+    let text = await file.text();
+    if (!text.trim() && seedIfEmpty) {
+      text = buildSeedJson();
+      await writeFile(text);
     }
 
-    if (!data.length) {
-      tasks = buildSeedTasks();
-      setFileStatus('Connected to Supabase', 'connected');
-      showGantt(true);
-      render();
-      scheduleSave();
-      return;
-    }
-
-    tasks = data.map(rowToTask).sort((a, b) => a.order - b.order);
-    setFileStatus('Connected to Supabase', 'connected');
+    const parsed = parseJson(text);
+    tasks = parsed.tasks;
+    capabilityOptions = parsed.capabilities;
+    populateCapabilitySelect();
+    setFileStatus('Connected: ' + fileHandle.name, 'connected');
+    applyPageTitleFromFile(fileHandle.name);
     showGantt(true);
     render();
+    return true;
+  }
+
+  async function writeFile(text) {
+    const writable = await fileHandle.createWritable();
+    await writable.write(text);
+    await writable.close();
+  }
+
+  async function openExisting() {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        suggestedName: 'project.json',
+      });
+      await connectHandle(handle);
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error(err);
+    }
+  }
+
+  async function createNew() {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'project.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+      });
+      await connectHandle(handle, { seedIfEmpty: true });
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error(err);
+    }
+  }
+
+  async function tryRestoreHandle() {
+    try {
+      const handle = await idbGet(DB_KEY);
+      if (!handle) return;
+
+      // If the browser already granted permission in a prior session, no user
+      // gesture is needed — reopen it immediately without waiting for a click.
+      const alreadyGranted = (await handle.queryPermission({ mode: 'readwrite' })) === 'granted';
+      if (alreadyGranted) {
+        await connectHandle(handle);
+        return;
+      }
+
+      setFileStatus('Reconnect to ' + handle.name + ' to resume', '');
+      fileStatusEl.textContent += ' ';
+      const reconnectBtn = document.createElement('button');
+      reconnectBtn.className = 'btn';
+      reconnectBtn.textContent = 'Reconnect';
+      reconnectBtn.addEventListener('click', async () => {
+        reconnectBtn.remove();
+        await connectHandle(handle);
+      });
+      fileStatusEl.after(reconnectBtn);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   // ---------- View mode ----------
@@ -640,7 +779,7 @@
   // ---------- Filter popup (capability / color) ----------
   function capabilitiesInUse() {
     const present = new Set(tasks.map((t) => t.capability || ''));
-    const ordered = CAPABILITY_OPTIONS.filter((c) => present.has(c));
+    const ordered = capabilityOptions.filter((c) => present.has(c));
     if (present.has('')) ordered.push('');
     return ordered;
   }
@@ -753,6 +892,100 @@
     render();
   }
 
+  // ---------- Manage capabilities popup ----------
+  function populateCapabilitySelect() {
+    const current = editCapabilityInput.value;
+    editCapabilityInput.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '—';
+    editCapabilityInput.appendChild(blank);
+    capabilityOptions.forEach((cap) => {
+      const opt = document.createElement('option');
+      opt.value = cap;
+      opt.textContent = cap;
+      editCapabilityInput.appendChild(opt);
+    });
+    editCapabilityInput.value = capabilityOptions.includes(current) ? current : '';
+  }
+
+  function afterCapabilitiesChanged() {
+    populateCapabilitySelect();
+    renderCapabilitiesDialog();
+    render();
+    scheduleSave();
+  }
+
+  function renameCapability(index, rawName) {
+    const oldName = capabilityOptions[index];
+    const newName = rawName.trim();
+    if (!newName || newName === oldName) {
+      renderCapabilitiesDialog();
+      return;
+    }
+
+    const existingIndex = capabilityOptions.findIndex((c) => c === newName);
+    if (existingIndex !== -1 && existingIndex !== index) {
+      // Renaming onto an existing entry merges the two — drop the duplicate
+      // slot rather than leaving two identical options in the list.
+      capabilityOptions.splice(index, 1);
+    } else {
+      capabilityOptions[index] = newName;
+    }
+
+    tasks.forEach((t) => {
+      if (t.capability === oldName) t.capability = newName;
+    });
+
+    afterCapabilitiesChanged();
+  }
+
+  function addCapability(rawName) {
+    const name = rawName.trim();
+    if (!name || capabilityOptions.includes(name)) return;
+    capabilityOptions.push(name);
+    afterCapabilitiesChanged();
+  }
+
+  function deleteCapability(index) {
+    const [name] = capabilityOptions.splice(index, 1);
+    tasks.forEach((t) => {
+      if (t.capability === name) t.capability = '';
+    });
+    afterCapabilitiesChanged();
+  }
+
+  function renderCapabilitiesDialog() {
+    capabilitiesListEl.innerHTML = '';
+    capabilityOptions.forEach((cap, index) => {
+      const li = document.createElement('li');
+      li.className = 'capabilities-item';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = cap;
+      input.maxLength = 60;
+      input.addEventListener('change', () => renameCapability(index, input.value));
+      li.appendChild(input);
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = '×';
+      delBtn.title = 'Delete capability';
+      delBtn.addEventListener('click', () => deleteCapability(index));
+      li.appendChild(delBtn);
+
+      capabilitiesListEl.appendChild(li);
+    });
+  }
+
+  function openCapabilitiesDialog() {
+    renderCapabilitiesDialog();
+    capabilitiesAddInput.value = '';
+    capabilitiesDialog.showModal();
+  }
+
   // ---------- Timeline start date ----------
   function syncTimelineStartInput() {
     timelineStartInput.value = formatISODate(timelineStartDate);
@@ -766,6 +999,22 @@
       // ignore — persistence is a convenience, not a requirement
     }
     render();
+  }
+
+  // ---------- Page title ----------
+  // Derives the chart title from the connected file's name so the chart is
+  // always labeled after the project it represents, e.g. "roadmap.json" -> "Roadmap".
+  function titleFromFileName(fileName) {
+    const base = fileName.replace(/\.json$/i, '');
+    const words = base.split(/[\s_-]+/).filter(Boolean);
+    if (!words.length) return 'Project';
+    return words.map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  function applyPageTitleFromFile(fileName) {
+    const title = titleFromFileName(fileName);
+    pageTitleEl.textContent = title;
+    document.title = title;
   }
 
   // ---------- Rendering ----------
@@ -1049,7 +1298,6 @@
 
   function deleteTask(id) {
     tasks = tasks.filter((t) => t.id !== id);
-    deletedTaskIds.add(id);
     sortedTasks().forEach((t, idx) => (t.order = idx));
     render();
     scheduleSave();
@@ -1101,7 +1349,6 @@
 
   function confirmCleanup() {
     const finishedIds = new Set(finishedTasks().map((t) => t.id));
-    finishedIds.forEach((id) => deletedTaskIds.add(id));
     tasks = tasks.filter((t) => !finishedIds.has(t.id));
     sortedTasks().forEach((t, idx) => (t.order = idx));
     cleanupDialog.close();
@@ -1131,7 +1378,7 @@
       startDate: formatISODate(mondayOf(new Date())),
       durationWeeks: 1,
       order: tasks.length,
-      color: '#5b8cff',
+      color: DEFAULT_COLOR_1,
       capability: '',
       phase: DEFAULT_PHASE,
     };
@@ -1201,7 +1448,7 @@
 
   // ---------- Export ----------
   function baseFileName() {
-    return 'roadmap';
+    return fileHandle ? fileHandle.name.replace(/\.json$/i, '') : 'project';
   }
 
   function roundRectPath(ctx, x, y, w, h, r) {
@@ -1350,7 +1597,7 @@
   }
 
   function backupData() {
-    const blob = new Blob([serializeJson(tasks)], { type: 'application/json' });
+    const blob = new Blob([serializeJson(tasks, capabilityOptions)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const stamp = formatISODate(new Date());
     const a = document.createElement('a');
@@ -1393,6 +1640,7 @@
 
   // ---------- Saving ----------
   function scheduleSave() {
+    if (!fileHandle) return;
     if (saveTimer) clearTimeout(saveTimer);
     saveStatusEl.textContent = 'Saving...';
     saveStatusEl.className = 'save-status saving';
@@ -1400,18 +1648,9 @@
   }
 
   async function saveTasks() {
+    if (!fileHandle) return;
     try {
-      if (tasks.length) {
-        const rows = tasks.map(taskToRow);
-        const { error } = await supabaseClient.from(TABLE).upsert(rows, { onConflict: 'id' });
-        if (error) throw error;
-      }
-      if (deletedTaskIds.size) {
-        const ids = [...deletedTaskIds];
-        const { error } = await supabaseClient.from(TABLE).delete().in('id', ids);
-        if (error) throw error;
-        deletedTaskIds.clear();
-      }
+      await writeFile(serializeJson(tasks, capabilityOptions));
       saveStatusEl.textContent = 'Saved';
       saveStatusEl.className = 'save-status';
     } catch (err) {
@@ -1424,6 +1663,8 @@
   // ---------- Init ----------
   addTaskBtn.addEventListener('click', addTask);
   autosortBtn.addEventListener('click', autoSortTasks);
+  openFileBtn.addEventListener('click', openExisting);
+  newFileBtn.addEventListener('click', createNew);
   backupDataBtn.addEventListener('click', backupData);
   exportPngBtn.addEventListener('click', exportPng);
   exportPdfBtn.addEventListener('click', exportPdf);
@@ -1452,6 +1693,16 @@
   filterCloseBtn.addEventListener('click', () => filterDialog.close());
   filterClearBtn.addEventListener('click', clearFilters);
 
+  populateCapabilitySelect();
+  capabilitiesBtn.addEventListener('click', openCapabilitiesDialog);
+  capabilitiesCloseBtn.addEventListener('click', () => capabilitiesDialog.close());
+  capabilitiesAddForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    addCapability(capabilitiesAddInput.value);
+    capabilitiesAddInput.value = '';
+    capabilitiesAddInput.focus();
+  });
+
   cleanupBtn.addEventListener('click', openCleanupDialog);
   cleanupCancelBtn.addEventListener('click', () => cleanupDialog.close());
   cleanupOkBtn.addEventListener('click', confirmCleanup);
@@ -1469,5 +1720,12 @@
   });
   syncTimelineStartInput();
 
-  loadTasks();
+  if (!supportsFSA) {
+    unsupportedBanner.hidden = false;
+    openFileBtn.disabled = true;
+    newFileBtn.disabled = true;
+    setFileStatus('File System Access not supported', 'error');
+  } else {
+    tryRestoreHandle();
+  }
 })();
