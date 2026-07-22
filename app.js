@@ -21,6 +21,8 @@
     { name: 'Green', hex: '#4FCE65' },
     { name: 'Blue', hex: '#5B8CFF' },
     { name: 'Purple', hex: '#DC60C3' },
+    { name: 'Light Grey', hex: '#DEDEDE' },
+    { name: 'Grey', hex: '#B1B1B1' },
   ];
   const CAPABILITY_OPTIONS = [
     'Customer Service', 'Fulfilment', 'Payment', 'Production', 'Sales', 'Self Serve', 'Technology', 'UX and UI', 'Verfication',
@@ -474,7 +476,7 @@
       startDate: formatISODate(addDays(anchor, t.startWeekOffset * 7)),
       durationWeeks: t.durationWeeks,
       order: idx,
-      color: '',
+      color: DEFAULT_COLOR_1,
       capability: '',
       phase: DEFAULT_PHASE,
     }));
@@ -1239,7 +1241,7 @@
       startDate: formatISODate(mondayOf(new Date())),
       durationWeeks: 1,
       order: tasks.length,
-      color: '#5B8CFF',
+      color: DEFAULT_COLOR_1,
       capability: '',
       phase: DEFAULT_PHASE,
     };
