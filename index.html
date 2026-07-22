@@ -3,17 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Project Gantt Chart</title>
+<title>Technology Roadmap</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1 id="page-title">Project Gantt Chart</h1>
+    <h1 id="page-title">Technology Roadmap</h1>
     <div class="topbar-actions">
-      <span id="file-status" class="file-status">No file connected</span>
-      <button id="open-file-btn" class="btn">Open Project</button>
-      <button id="new-file-btn" class="btn">Create Project</button>
+      <span id="file-status" class="file-status">Connecting...</span>
       <span id="save-status" class="save-status"></span>
       <div class="timeline-start-group" role="group" aria-label="Timeline start date">
         <label for="timeline-start-input">Start</label>
@@ -32,23 +30,19 @@
       <button id="autosort-btn" class="btn" disabled>Auto Sort</button>
       <button id="filter-btn" class="btn" title="Filter which task bars are shown, by capability and color">Filter</button>
       <button id="display-btn" class="btn" title="Change label, density, and theme display options">Display</button>
-      <button id="cleanup-btn" class="btn" disabled hidden title="Find tasks that have already finished and remove them">Data Clean Up</button>
-      <button id="backup-data-btn" class="btn" disabled title="Download a backup copy of the project JSON file">Back Up Data</button>
+      <button id="cleanup-btn" class="btn" disabled title="Find tasks that have already finished and remove them">Data Clean Up</button>
+      <button id="backup-data-btn" class="btn" disabled title="Download a backup copy of the project JSON file">Export JSON</button>
       <button id="export-png-btn" class="btn" disabled>Export PNG</button>
       <button id="export-pdf-btn" class="btn" disabled>Export PDF</button>
-      <button id="add-task-btn" class="btn btn-primary" disabled>+ Add Task</button>
+      <button id="add-task-btn" class="btn btn-primary" disabled>+ Project</button>
     </div>
   </header>
 
-  <div id="unsupported-banner" class="banner" hidden>
-    Your browser doesn't support direct file access (File System Access API). Please open this
-    page in a Chromium-based browser like Edge or Chrome to enable live saving to project.json.
-  </div>
+  <div id="unsupported-banner" class="banner" hidden></div>
 
   <main class="gantt-wrap">
     <div id="empty-state" class="empty-state">
-      <p>Connect to <code>project.json</code> to get started.</p>
-      <p class="muted">Use "Open Project" to pick the existing file in this folder, or "Create Project" to start a new one. Once connected, all edits save automatically back to the file on disk.</p>
+      <p>Loading roadmap...</p>
     </div>
     <div id="gantt" class="gantt" hidden>
       <div class="gantt-header-row">
@@ -173,6 +167,7 @@
     </div>
   </dialog>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

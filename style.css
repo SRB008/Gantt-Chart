@@ -61,6 +61,7 @@ body {
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .topbar h1 {
@@ -710,13 +711,11 @@ body {
     color-adjust: exact !important;
   }
 
-  html, body { height: auto; }
-
   body { background: #fff; display: block; }
 
   .topbar, .banner, #empty-state { display: none !important; }
 
-  .gantt-wrap { padding: 0; overflow: visible; flex: none; }
+  .gantt-wrap { padding: 0; overflow: visible; height: auto; }
 
   .gantt {
     border: none;

@@ -84,8 +84,6 @@
     color: var(--text);
     border: 1px solid var(--border);
   }
-  input[type="file"] { display: none; }
-
   #error-banner {
     display: none;
     background: #ff4853;
@@ -247,9 +245,7 @@
 
 <header>
   <h1>Feature Release Roadmap</h1>
-  <span class="file-info" id="file-info">roadmap.json (sample data)</span>
-  <button class="btn" id="open-project-btn">Open Project</button>
-  <input type="file" id="file-input" accept=".json,application/json">
+  <span class="file-info" id="file-info">Connecting...</span>
   <button class="btn secondary" id="reload-btn">Reload</button>
   <button class="btn secondary" id="export-png-btn">Export PNG</button>
   <button class="btn secondary" id="export-pdf-btn">Export PDF</button>
@@ -262,50 +258,29 @@
 
 <main>
   <div id="board"></div>
-  <div id="empty-state">No milestones loaded. Click "Open Project" to load a JSON file.</div>
+  <div id="empty-state">No milestones loaded.</div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-const DEFAULT_DATA = [
-  { "id": "1", "name": "Bundles", "startDate": "2026-04-20", "durationWeeks": 14, "order": 0, "color": "#5b8cff", "capability": "Sales" },
-  { "id": "tyo0c0kxmmr8ua0qk", "name": "DMCCA", "startDate": "2026-05-11", "durationWeeks": 33, "order": 1, "color": "#ffd505", "capability": "" },
-  { "id": "4", "name": "Customer Order Management", "startDate": "2026-05-18", "durationWeeks": 12, "order": 2, "color": "#5b8cff", "capability": "Fulfilment" },
-  { "id": "tmtsot40smr8wvm0b", "name": "D365 Phase 1", "startDate": "2026-05-18", "durationWeeks": 23, "order": 3, "color": "#4fce65", "capability": "" },
-  { "id": "tpkclj0j0mr97xy54", "name": "BAU / Customer First", "startDate": "2026-05-18", "durationWeeks": 32, "order": 4, "color": "#ffd505", "capability": "" },
-  { "id": "t5shxwk8gmr9870nw", "name": "Digigold Physical Redemption", "startDate": "2026-05-25", "durationWeeks": 26, "order": 5, "color": "#5b8cff", "capability": "Payment" },
-  { "id": "t61ka2x3fmr7tdvy8", "name": "Self Serve Address Change", "startDate": "2026-05-25", "durationWeeks": 28, "order": 6, "color": "#5b8cff", "capability": "" },
-  { "id": "ts6hi9136mr97uc44", "name": "Prepaid Card Warning", "startDate": "2026-06-01", "durationWeeks": 7, "order": 7, "color": "#dc60c3", "capability": "" },
-  { "id": "3", "name": "Google Merchant API", "startDate": "2026-06-29", "durationWeeks": 6, "order": 8, "color": "#dc60c3", "capability": "" },
-  { "id": "tg9dxpou8mr8ww61n", "name": "D365 UAT Cycle 1", "startDate": "2026-06-29", "durationWeeks": 7, "order": 9, "color": "#4fce65", "capability": "" },
-  { "id": "2", "name": "Cluedo", "startDate": "2026-06-29", "durationWeeks": 11, "order": 10, "color": "#dc60c3", "capability": "" },
-  { "id": "6", "name": "PAMP Snag List", "startDate": "2026-06-29", "durationWeeks": 11, "order": 11, "color": "#5b8cff", "capability": "" },
-  { "id": "tb7478xuumr7tf5bk", "name": "Website Comms Framework", "startDate": "2026-06-29", "durationWeeks": 26, "order": 12, "color": "#ffd505", "capability": "" },
-  { "id": "tabracvjimr7tdvrd", "name": "Star Trek: Theme Test", "startDate": "2026-07-06", "durationWeeks": 6, "order": 13, "color": "#dc60c3", "capability": "" },
-  { "id": "tugl9ov78mr985wtr", "name": "Consumer Credit: In-house", "startDate": "2026-07-13", "durationWeeks": 13, "order": 14, "color": "#5b8cff", "capability": "" },
-  { "id": "tvirp5l1nmrbqybng", "name": "Agent Ordering: Impersonation", "startDate": "2026-07-27", "durationWeeks": 2, "order": 15, "color": "#ff4853", "capability": "Self Serve" },
-  { "id": "t6qugwwngmr7tdw6o", "name": "Single Session Enforcement", "startDate": "2026-07-27", "durationWeeks": 6, "order": 16, "color": "#dc60c3", "capability": "" },
-  { "id": "tomlws21fmr8ubrxf", "name": "GEO/AEO", "startDate": "2026-07-27", "durationWeeks": 22, "order": 17, "color": "#ffd505", "capability": "" },
-  { "id": "twn6b8eshmrbqvl8j", "name": "Tooth Fairy Letter: Data", "startDate": "2026-08-03", "durationWeeks": 4, "order": 18, "color": "#ff4853", "capability": "Technology" },
-  { "id": "thuhp87f7mr7tdwr4", "name": "RME Revamp", "startDate": "2026-08-17", "durationWeeks": 5, "order": 19, "color": "#dc60c3", "capability": "" },
-  { "id": "tkl05o1y9mr9846vo", "name": "**Web Deployment Freeze**", "startDate": "2026-09-07", "durationWeeks": 9, "order": 20, "color": "#a8a8a8", "capability": "" },
-  { "id": "5", "name": "Klarna", "startDate": "2026-09-14", "durationWeeks": 8, "order": 21, "color": "#5b8cff", "capability": "" },
-  { "id": "tbnkgsvcqmriyf85t", "name": "Self Serve Cancellation Test", "startDate": "2026-09-21", "durationWeeks": 6, "order": 22, "color": "#dedede", "capability": "" },
-  { "id": "tif2woxs5mr997qk8", "name": "D365 Hypercare", "startDate": "2026-11-02", "durationWeeks": 7, "order": 23, "color": "#4fce65", "capability": "" },
-  { "id": "tczdkwtcomr830ylv", "name": "Wallet Repatriation", "startDate": "2026-12-21", "durationWeeks": 1, "order": 24, "color": "#ff8b3e", "capability": "" }
-];
+const SUPABASE_URL = "https://qkkcvbafkderoxlxvjww.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FzDjgkUIrncKMuyt253GsA_qK2fGKH1";
+const TABLE = "roadmap_tasks";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MONTH_NAMES = ["January","February","March","April","May","June",
                       "July","August","September","October","November","December"];
 
-function parseJSONData(text) {
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch (err) {
-    throw new Error(`Invalid JSON: ${err.message}`);
-  }
-  if (!Array.isArray(data)) throw new Error("Expected a JSON array of milestones.");
-  return data;
+function rowToRawMilestone(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    startDate: row.start_date,
+    durationWeeks: row.duration_weeks,
+    order: row.sort_order,
+    color: row.color,
+    capability: row.capability,
+  };
 }
 
 function parseMilestones(rawRows) {
@@ -405,16 +380,13 @@ function refresh() {
   render(filtered, currentMilestones);
 }
 
-function buildMonthRange(milestones) {
-  const keys = milestones.map(m => ({ y: m.finish.getUTCFullYear(), m: m.finish.getUTCMonth() }));
-  let min = keys[0], max = keys[0];
-  for (const k of keys) {
-    if (k.y < min.y || (k.y === min.y && k.m < min.m)) min = k;
-    if (k.y > max.y || (k.y === max.y && k.m > max.m)) max = k;
-  }
+const VISIBLE_MONTH_COUNT = 6;
+
+function buildMonthRange() {
+  const now = new Date();
+  let y = now.getUTCFullYear(), m = now.getUTCMonth();
   const months = [];
-  let y = min.y, m = min.m;
-  while (y < max.y || (y === max.y && m <= max.m)) {
+  for (let i = 0; i < VISIBLE_MONTH_COUNT; i++) {
     months.push({ y, m });
     m++; if (m > 11) { m = 0; y++; }
   }
@@ -427,7 +399,7 @@ function render(milestones, allMilestones) {
   board.innerHTML = "";
 
   if (!allMilestones.length) {
-    emptyState.textContent = "No milestones loaded. Click \"Open Project\" to load a JSON file.";
+    emptyState.textContent = "No milestones loaded.";
     emptyState.style.display = "block";
     return;
   }
@@ -438,7 +410,7 @@ function render(milestones, allMilestones) {
   }
   emptyState.style.display = "none";
 
-  const months = buildMonthRange(allMilestones);
+  const months = buildMonthRange();
   const grouped = new Map();
   months.forEach(({ y, m }) => grouped.set(`${y}-${String(m + 1).padStart(2, "0")}`, []));
   milestones.forEach(ms => {
@@ -492,74 +464,28 @@ function showError(msg) {
   banner.style.display = msg ? "block" : "none";
 }
 
-let activeFileHandle = null;
-
-function loadJSONText(text, label, persist = true) {
+async function loadFromSupabase() {
+  document.getElementById("file-info").textContent = "Loading...";
   try {
-    const rows = parseJSONData(text);
-    const milestones = parseMilestones(rows);
+    const { data, error } = await supabaseClient
+      .from(TABLE)
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+
+    const milestones = data.length ? parseMilestones(data.map(rowToRawMilestone)) : [];
     currentMilestones = milestones;
     activeColors = new Set(milestones.map(getColorKey));
     refresh();
     showError("");
-    document.getElementById("file-info").textContent = label;
-    if (persist) {
-      try {
-        localStorage.setItem("milestones_last_json", text);
-        localStorage.setItem("milestones_last_label", label);
-      } catch (err) { /* localStorage unavailable, e.g. private browsing */ }
-    }
+    document.getElementById("file-info").textContent = "Connected to Supabase";
   } catch (err) {
-    showError(`Could not load file: ${err.message}`);
+    showError(`Could not load data: ${err.message}`);
+    document.getElementById("file-info").textContent = "Connection error";
   }
 }
 
-async function openProject() {
-  if (window.showOpenFilePicker) {
-    try {
-      const [handle] = await window.showOpenFilePicker({
-        types: [{ description: "JSON files", accept: { "application/json": [".json"] } }],
-      });
-      const file = await handle.getFile();
-      const text = await file.text();
-      activeFileHandle = handle;
-      loadJSONText(text, file.name);
-    } catch (err) {
-      if (err.name !== "AbortError") showError("Could not open file: " + err.message);
-    }
-  } else {
-    document.getElementById("file-input").click();
-  }
-}
-
-document.getElementById("open-project-btn").addEventListener("click", openProject);
-
-document.getElementById("file-input").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  activeFileHandle = null;
-  const reader = new FileReader();
-  reader.onload = () => loadJSONText(reader.result, file.name);
-  reader.onerror = () => showError("Could not read the selected file.");
-  reader.readAsText(file);
-});
-
-document.getElementById("reload-btn").addEventListener("click", async () => {
-  if (activeFileHandle) {
-    try {
-      const file = await activeFileHandle.getFile();
-      const text = await file.text();
-      loadJSONText(text, file.name);
-    } catch (err) {
-      showError("Could not reload file: " + err.message);
-    }
-    return;
-  }
-  const text = localStorage.getItem("milestones_last_json");
-  const label = localStorage.getItem("milestones_last_label");
-  if (!text) { showError("No previously loaded file to reload."); return; }
-  loadJSONText(text, label || "reloaded data");
-});
+document.getElementById("reload-btn").addEventListener("click", loadFromSupabase);
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -861,7 +787,7 @@ async function publishStaticView() {
 
 document.getElementById("publish-btn").addEventListener("click", publishStaticView);
 
-loadJSONText(JSON.stringify(DEFAULT_DATA), "roadmap.json (sample data)", false);
+loadFromSupabase();
 </script>
 </body>
 </html>
