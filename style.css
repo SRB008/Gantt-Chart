@@ -606,7 +606,7 @@ body {
   min-width: 0;
 }
 
-.filter-capability-list {
+.filter-tag-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -650,11 +650,11 @@ body {
   outline-offset: 2px;
 }
 
-.capabilities-dialog {
+.tags-dialog {
   width: 360px;
 }
 
-.capabilities-list {
+.tags-list {
   list-style: none;
   margin: 0 0 12px;
   padding: 0;
@@ -665,13 +665,13 @@ body {
   overflow-y: auto;
 }
 
-.capabilities-item {
+.tags-item {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.capabilities-item input[type="text"] {
+.tags-item input[type="text"] {
   flex: 1;
   padding: 6px 8px;
   border-radius: 6px;
@@ -681,17 +681,17 @@ body {
   font-size: 13px;
 }
 
-.capabilities-item .delete-btn {
+.tags-item .delete-btn {
   font-size: 18px;
 }
 
-.capabilities-add-form {
+.tags-add-form {
   display: flex;
   gap: 6px;
   margin-bottom: 4px;
 }
 
-.capabilities-add-form input[type="text"] {
+.tags-add-form input[type="text"] {
   flex: 1;
   padding: 8px;
   border-radius: 6px;

@@ -267,31 +267,31 @@
 
 <script>
 const DEFAULT_DATA = [
-  { "id": "1", "name": "Bundles", "startDate": "2026-04-20", "durationWeeks": 14, "order": 0, "color": "#5b8cff", "capability": "Sales" },
-  { "id": "tyo0c0kxmmr8ua0qk", "name": "DMCCA", "startDate": "2026-05-11", "durationWeeks": 33, "order": 1, "color": "#ffd505", "capability": "" },
-  { "id": "4", "name": "Customer Order Management", "startDate": "2026-05-18", "durationWeeks": 12, "order": 2, "color": "#5b8cff", "capability": "Fulfilment" },
-  { "id": "tmtsot40smr8wvm0b", "name": "D365 Phase 1", "startDate": "2026-05-18", "durationWeeks": 23, "order": 3, "color": "#4fce65", "capability": "" },
-  { "id": "tpkclj0j0mr97xy54", "name": "BAU / Customer First", "startDate": "2026-05-18", "durationWeeks": 32, "order": 4, "color": "#ffd505", "capability": "" },
-  { "id": "t5shxwk8gmr9870nw", "name": "Digigold Physical Redemption", "startDate": "2026-05-25", "durationWeeks": 26, "order": 5, "color": "#5b8cff", "capability": "Payment" },
-  { "id": "t61ka2x3fmr7tdvy8", "name": "Self Serve Address Change", "startDate": "2026-05-25", "durationWeeks": 28, "order": 6, "color": "#5b8cff", "capability": "" },
-  { "id": "ts6hi9136mr97uc44", "name": "Prepaid Card Warning", "startDate": "2026-06-01", "durationWeeks": 7, "order": 7, "color": "#dc60c3", "capability": "" },
-  { "id": "3", "name": "Google Merchant API", "startDate": "2026-06-29", "durationWeeks": 6, "order": 8, "color": "#dc60c3", "capability": "" },
-  { "id": "tg9dxpou8mr8ww61n", "name": "D365 UAT Cycle 1", "startDate": "2026-06-29", "durationWeeks": 7, "order": 9, "color": "#4fce65", "capability": "" },
-  { "id": "2", "name": "Cluedo", "startDate": "2026-06-29", "durationWeeks": 11, "order": 10, "color": "#dc60c3", "capability": "" },
-  { "id": "6", "name": "PAMP Snag List", "startDate": "2026-06-29", "durationWeeks": 11, "order": 11, "color": "#5b8cff", "capability": "" },
-  { "id": "tb7478xuumr7tf5bk", "name": "Website Comms Framework", "startDate": "2026-06-29", "durationWeeks": 26, "order": 12, "color": "#ffd505", "capability": "" },
-  { "id": "tabracvjimr7tdvrd", "name": "Star Trek: Theme Test", "startDate": "2026-07-06", "durationWeeks": 6, "order": 13, "color": "#dc60c3", "capability": "" },
-  { "id": "tugl9ov78mr985wtr", "name": "Consumer Credit: In-house", "startDate": "2026-07-13", "durationWeeks": 13, "order": 14, "color": "#5b8cff", "capability": "" },
-  { "id": "tvirp5l1nmrbqybng", "name": "Agent Ordering: Impersonation", "startDate": "2026-07-27", "durationWeeks": 2, "order": 15, "color": "#ff4853", "capability": "Self Serve" },
-  { "id": "t6qugwwngmr7tdw6o", "name": "Single Session Enforcement", "startDate": "2026-07-27", "durationWeeks": 6, "order": 16, "color": "#dc60c3", "capability": "" },
-  { "id": "tomlws21fmr8ubrxf", "name": "GEO/AEO", "startDate": "2026-07-27", "durationWeeks": 22, "order": 17, "color": "#ffd505", "capability": "" },
-  { "id": "twn6b8eshmrbqvl8j", "name": "Tooth Fairy Letter: Data", "startDate": "2026-08-03", "durationWeeks": 4, "order": 18, "color": "#ff4853", "capability": "Technology" },
-  { "id": "thuhp87f7mr7tdwr4", "name": "RME Revamp", "startDate": "2026-08-17", "durationWeeks": 5, "order": 19, "color": "#dc60c3", "capability": "" },
-  { "id": "tkl05o1y9mr9846vo", "name": "**Web Deployment Freeze**", "startDate": "2026-09-07", "durationWeeks": 9, "order": 20, "color": "#a8a8a8", "capability": "" },
-  { "id": "5", "name": "Klarna", "startDate": "2026-09-14", "durationWeeks": 8, "order": 21, "color": "#5b8cff", "capability": "" },
-  { "id": "tbnkgsvcqmriyf85t", "name": "Self Serve Cancellation Test", "startDate": "2026-09-21", "durationWeeks": 6, "order": 22, "color": "#dedede", "capability": "" },
-  { "id": "tif2woxs5mr997qk8", "name": "D365 Hypercare", "startDate": "2026-11-02", "durationWeeks": 7, "order": 23, "color": "#4fce65", "capability": "" },
-  { "id": "tczdkwtcomr830ylv", "name": "Wallet Repatriation", "startDate": "2026-12-21", "durationWeeks": 1, "order": 24, "color": "#ff8b3e", "capability": "" }
+  { "id": "1", "name": "Bundles", "startDate": "2026-04-20", "durationWeeks": 14, "order": 0, "color": "#5b8cff", "tag": "Sales" },
+  { "id": "tyo0c0kxmmr8ua0qk", "name": "DMCCA", "startDate": "2026-05-11", "durationWeeks": 33, "order": 1, "color": "#ffd505", "tag": "" },
+  { "id": "4", "name": "Customer Order Management", "startDate": "2026-05-18", "durationWeeks": 12, "order": 2, "color": "#5b8cff", "tag": "Fulfilment" },
+  { "id": "tmtsot40smr8wvm0b", "name": "D365 Phase 1", "startDate": "2026-05-18", "durationWeeks": 23, "order": 3, "color": "#4fce65", "tag": "" },
+  { "id": "tpkclj0j0mr97xy54", "name": "BAU / Customer First", "startDate": "2026-05-18", "durationWeeks": 32, "order": 4, "color": "#ffd505", "tag": "" },
+  { "id": "t5shxwk8gmr9870nw", "name": "Digigold Physical Redemption", "startDate": "2026-05-25", "durationWeeks": 26, "order": 5, "color": "#5b8cff", "tag": "Payment" },
+  { "id": "t61ka2x3fmr7tdvy8", "name": "Self Serve Address Change", "startDate": "2026-05-25", "durationWeeks": 28, "order": 6, "color": "#5b8cff", "tag": "" },
+  { "id": "ts6hi9136mr97uc44", "name": "Prepaid Card Warning", "startDate": "2026-06-01", "durationWeeks": 7, "order": 7, "color": "#dc60c3", "tag": "" },
+  { "id": "3", "name": "Google Merchant API", "startDate": "2026-06-29", "durationWeeks": 6, "order": 8, "color": "#dc60c3", "tag": "" },
+  { "id": "tg9dxpou8mr8ww61n", "name": "D365 UAT Cycle 1", "startDate": "2026-06-29", "durationWeeks": 7, "order": 9, "color": "#4fce65", "tag": "" },
+  { "id": "2", "name": "Cluedo", "startDate": "2026-06-29", "durationWeeks": 11, "order": 10, "color": "#dc60c3", "tag": "" },
+  { "id": "6", "name": "PAMP Snag List", "startDate": "2026-06-29", "durationWeeks": 11, "order": 11, "color": "#5b8cff", "tag": "" },
+  { "id": "tb7478xuumr7tf5bk", "name": "Website Comms Framework", "startDate": "2026-06-29", "durationWeeks": 26, "order": 12, "color": "#ffd505", "tag": "" },
+  { "id": "tabracvjimr7tdvrd", "name": "Star Trek: Theme Test", "startDate": "2026-07-06", "durationWeeks": 6, "order": 13, "color": "#dc60c3", "tag": "" },
+  { "id": "tugl9ov78mr985wtr", "name": "Consumer Credit: In-house", "startDate": "2026-07-13", "durationWeeks": 13, "order": 14, "color": "#5b8cff", "tag": "" },
+  { "id": "tvirp5l1nmrbqybng", "name": "Agent Ordering: Impersonation", "startDate": "2026-07-27", "durationWeeks": 2, "order": 15, "color": "#ff4853", "tag": "Self Serve" },
+  { "id": "t6qugwwngmr7tdw6o", "name": "Single Session Enforcement", "startDate": "2026-07-27", "durationWeeks": 6, "order": 16, "color": "#dc60c3", "tag": "" },
+  { "id": "tomlws21fmr8ubrxf", "name": "GEO/AEO", "startDate": "2026-07-27", "durationWeeks": 22, "order": 17, "color": "#ffd505", "tag": "" },
+  { "id": "twn6b8eshmrbqvl8j", "name": "Tooth Fairy Letter: Data", "startDate": "2026-08-03", "durationWeeks": 4, "order": 18, "color": "#ff4853", "tag": "Technology" },
+  { "id": "thuhp87f7mr7tdwr4", "name": "RME Revamp", "startDate": "2026-08-17", "durationWeeks": 5, "order": 19, "color": "#dc60c3", "tag": "" },
+  { "id": "tkl05o1y9mr9846vo", "name": "**Web Deployment Freeze**", "startDate": "2026-09-07", "durationWeeks": 9, "order": 20, "color": "#a8a8a8", "tag": "" },
+  { "id": "5", "name": "Klarna", "startDate": "2026-09-14", "durationWeeks": 8, "order": 21, "color": "#5b8cff", "tag": "" },
+  { "id": "tbnkgsvcqmriyf85t", "name": "Self Serve Cancellation Test", "startDate": "2026-09-21", "durationWeeks": 6, "order": 22, "color": "#dedede", "tag": "" },
+  { "id": "tif2woxs5mr997qk8", "name": "D365 Hypercare", "startDate": "2026-11-02", "durationWeeks": 7, "order": 23, "color": "#4fce65", "tag": "" },
+  { "id": "tczdkwtcomr830ylv", "name": "Wallet Repatriation", "startDate": "2026-12-21", "durationWeeks": 1, "order": 24, "color": "#ff8b3e", "tag": "" }
 ];
 
 const MONTH_NAMES = ["January","February","March","April","May","June",
@@ -304,7 +304,7 @@ function parseJSONData(text) {
   } catch (err) {
     throw new Error(`Invalid JSON: ${err.message}`);
   }
-  // The Gantt editor stores project files as { capabilities, tasks } rather
+  // The Gantt editor stores project files as { tags, tasks } rather
   // than a bare array; unwrap that here so both formats open in this viewer.
   if (data && !Array.isArray(data) && Array.isArray(data.tasks)) data = data.tasks;
   if (!Array.isArray(data)) throw new Error("Expected a JSON array of milestones.");
@@ -330,7 +330,7 @@ function parseMilestones(rawRows) {
     finish.setUTCDate(finish.getUTCDate() + weeks * 7);
 
     const color = typeof r.color === "string" ? r.color.trim() : "";
-    const capability = typeof r.capability === "string" ? r.capability.trim() : "";
+    const tag = typeof r.tag === "string" ? r.tag.trim() : "";
 
     return {
       id: r.id != null ? String(r.id) : String(idx),
@@ -340,7 +340,7 @@ function parseMilestones(rawRows) {
       durationWeeks: weeks,
       order: r.order === "" || r.order === undefined || r.order === null ? idx : Number(r.order),
       color: color || null,
-      capability: capability || null,
+      tag: tag || null,
     };
   });
 }

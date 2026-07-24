@@ -24,8 +24,8 @@
     { name: 'Light Grey', hex: '#DEDEDE' },
     { name: 'Grey', hex: '#B1B1B1' },
   ];
-  const DEFAULT_CAPABILITY_OPTIONS = [
-    'Customer Service', 'Fulfilment', 'Payment', 'Production', 'Sales', 'Self Serve', 'Technology', 'UX and UI', 'Verfication',
+  const DEFAULT_TAG_OPTIONS = [
+    'Tag 1', 'Tag 2', 'Tag 3', 'Tag 4', 'Tag 5', 'Tag 6', 'Tag 7', 'Tag 8',
   ];
   const PHASE_OPTIONS = ['Not Started', 'Discovery', 'Build', 'Test', 'Complete'];
   const DEFAULT_PHASE = 'Not Started';
@@ -64,6 +64,7 @@
   const backupDataBtn = document.getElementById('backup-data-btn');
   const exportPngBtn = document.getElementById('export-png-btn');
   const exportPdfBtn = document.getElementById('export-pdf-btn');
+  const exportCsvBtn = document.getElementById('export-csv-btn');
   const autosortBtn = document.getElementById('autosort-btn');
   const openFileBtn = document.getElementById('open-file-btn');
   const newFileBtn = document.getElementById('new-file-btn');
@@ -81,7 +82,7 @@
   const editStartInput = document.getElementById('edit-start');
   const editDurationInput = document.getElementById('edit-duration');
   const editColorInput = document.getElementById('edit-color');
-  const editCapabilityInput = document.getElementById('edit-capability');
+  const editTagInput = document.getElementById('edit-tag');
   const editPhaseInput = document.getElementById('edit-phase');
   const editColorPresetsEl = document.getElementById('edit-color-presets');
   const editCancelBtn = document.getElementById('edit-cancel-btn');
@@ -97,15 +98,15 @@
   const filterDialog = document.getElementById('filter-dialog');
   const filterCloseBtn = document.getElementById('filter-close-btn');
   const filterClearBtn = document.getElementById('filter-clear-btn');
-  const filterCapabilityListEl = document.getElementById('filter-capability-list');
+  const filterTagListEl = document.getElementById('filter-tag-list');
   const filterPhaseListEl = document.getElementById('filter-phase-list');
   const filterColorListEl = document.getElementById('filter-color-list');
-  const capabilitiesBtn = document.getElementById('capabilities-btn');
-  const capabilitiesDialog = document.getElementById('capabilities-dialog');
-  const capabilitiesListEl = document.getElementById('capabilities-list');
-  const capabilitiesAddForm = document.getElementById('capabilities-add-form');
-  const capabilitiesAddInput = document.getElementById('capabilities-add-input');
-  const capabilitiesCloseBtn = document.getElementById('capabilities-close-btn');
+  const tagsBtn = document.getElementById('tags-btn');
+  const tagsDialog = document.getElementById('tags-dialog');
+  const tagsListEl = document.getElementById('tags-list');
+  const tagsAddForm = document.getElementById('tags-add-form');
+  const tagsAddInput = document.getElementById('tags-add-input');
+  const tagsCloseBtn = document.getElementById('tags-close-btn');
   const cleanupBtn = document.getElementById('cleanup-btn');
   const cleanupDialog = document.getElementById('cleanup-dialog');
   const cleanupHintEl = document.getElementById('cleanup-hint');
@@ -116,14 +117,14 @@
   const labelColResizeHandle = document.getElementById('label-col-resize-handle');
 
   let tasks = [];
-  let capabilityOptions = DEFAULT_CAPABILITY_OPTIONS.slice();
+  let tagOptions = DEFAULT_TAG_OPTIONS.slice();
   let saveTimer = null;
   let rowRefs = new Map(); // id -> { rowEl, barEl }
   let fileHandle = null;
   let editingTaskId = null;
 
-  // '' represents tasks with no capability / no color set.
-  let filterCapabilities = new Set();
+  // '' represents tasks with no tag / no color set.
+  let filterTags = new Set();
   let filterPhases = new Set();
   let filterColors = new Set();
 
@@ -424,12 +425,12 @@
 
   // ---------- JSON ----------
   // Accepts both the legacy format (a plain array of tasks, with the
-  // capability list only ever living in app.js) and the current format
-  // (an object with "capabilities" and "tasks"), so old project files keep
+  // tag list only ever living in app.js) and the current format
+  // (an object with "tags" and "tasks"), so old project files keep
   // opening without a manual migration step.
   function parseJson(text) {
     const raw = text.trim();
-    if (!raw) return { capabilities: DEFAULT_CAPABILITY_OPTIONS.slice(), tasks: [] };
+    if (!raw) return { tags: DEFAULT_TAG_OPTIONS.slice(), tasks: [] };
     let data;
     try {
       data = JSON.parse(raw);
@@ -438,21 +439,21 @@
     }
 
     let rawTasks;
-    let rawCapabilities;
+    let rawTags;
     if (Array.isArray(data)) {
       rawTasks = data;
-      rawCapabilities = DEFAULT_CAPABILITY_OPTIONS;
+      rawTags = DEFAULT_TAG_OPTIONS;
     } else if (data && Array.isArray(data.tasks)) {
       rawTasks = data.tasks;
-      rawCapabilities = Array.isArray(data.capabilities) ? data.capabilities : DEFAULT_CAPABILITY_OPTIONS;
+      rawTags = Array.isArray(data.tags) ? data.tags : DEFAULT_TAG_OPTIONS;
     } else {
       throw new Error('Expected a JSON array of tasks, or an object with a "tasks" array.');
     }
 
-    const capabilities = [];
-    rawCapabilities.forEach((c) => {
+    const tags = [];
+    rawTags.forEach((c) => {
       const name = typeof c === 'string' ? c.trim() : '';
-      if (name && !capabilities.includes(name)) capabilities.push(name);
+      if (name && !tags.includes(name)) tags.push(name);
     });
 
     const result = rawTasks.map((row) => {
@@ -464,26 +465,26 @@
         durationWeeks: Math.max(1, parseInt(row.durationWeeks, 10) || 1),
         order: Number.isFinite(row.order) ? row.order : 0,
         color: row.color || '',
-        capability: row.capability || '',
+        tag: row.tag || '',
         phase: PHASE_OPTIONS.includes(row.phase) ? row.phase : DEFAULT_PHASE,
       };
     });
     result.sort((a, b) => a.order - b.order);
 
-    // A task can reference a capability that was removed from the managed
+    // A task can reference a tag that was removed from the managed
     // list (e.g. an older file edited outside the app) — keep it selectable
     // instead of silently dropping the value.
     result.forEach((t) => {
-      if (t.capability && !capabilities.includes(t.capability)) capabilities.push(t.capability);
+      if (t.tag && !tags.includes(t.tag)) tags.push(t.tag);
     });
 
-    return { capabilities, tasks: result };
+    return { tags, tasks: result };
   }
 
-  function serializeJson(list, capabilities) {
+  function serializeJson(list, tags) {
     const sorted = [...list].sort((a, b) => a.order - b.order);
     const data = {
-      capabilities: capabilities.slice(),
+      tags: tags.slice(),
       tasks: sorted.map((t) => ({
         id: t.id,
         name: t.name,
@@ -491,7 +492,7 @@
         durationWeeks: t.durationWeeks,
         order: t.order,
         color: t.color,
-        capability: t.capability,
+        tag: t.tag,
         phase: t.phase,
       })),
     };
@@ -516,10 +517,10 @@
       durationWeeks: t.durationWeeks,
       order: idx,
       color: DEFAULT_COLOR_1,
-      capability: '',
+      tag: '',
       phase: DEFAULT_PHASE,
     }));
-    return serializeJson(seedTasks, DEFAULT_CAPABILITY_OPTIONS.slice());
+    return serializeJson(seedTasks, DEFAULT_TAG_OPTIONS.slice());
   }
 
   // ---------- File connection ----------
@@ -532,11 +533,12 @@
     emptyState.hidden = show;
     ganttEl.hidden = !show;
     addTaskBtn.disabled = !show;
-    capabilitiesBtn.disabled = !show;
+    tagsBtn.disabled = !show;
     cleanupBtn.disabled = !show;
     backupDataBtn.disabled = !show;
     exportPngBtn.disabled = !show;
     exportPdfBtn.disabled = !show;
+    exportCsvBtn.disabled = !show;
     autosortBtn.disabled = !show;
   }
 
@@ -565,8 +567,8 @@
 
     const parsed = parseJson(text);
     tasks = parsed.tasks;
-    capabilityOptions = parsed.capabilities;
-    populateCapabilitySelect();
+    tagOptions = parsed.tags;
+    populateTagSelect();
     setFileStatus('Connected: ' + fileHandle.name, 'connected');
     applyPageTitleFromFile(fileHandle.name);
     showGantt(true);
@@ -776,10 +778,10 @@
     displayDialog.showModal();
   }
 
-  // ---------- Filter popup (capability / color) ----------
-  function capabilitiesInUse() {
-    const present = new Set(tasks.map((t) => t.capability || ''));
-    const ordered = capabilityOptions.filter((c) => present.has(c));
+  // ---------- Filter popup (tag / color) ----------
+  function tagsInUse() {
+    const present = new Set(tasks.map((t) => t.tag || ''));
+    const ordered = tagOptions.filter((c) => present.has(c));
     if (present.has('')) ordered.push('');
     return ordered;
   }
@@ -802,31 +804,31 @@
   }
 
   function syncFilterButton() {
-    filterBtn.classList.toggle('active', filterCapabilities.size > 0 || filterPhases.size > 0 || filterColors.size > 0);
+    filterBtn.classList.toggle('active', filterTags.size > 0 || filterPhases.size > 0 || filterColors.size > 0);
   }
 
   function renderFilterDialog() {
-    filterCapabilityListEl.innerHTML = '';
-    const capOptions = capabilitiesInUse();
-    if (!capOptions.length) {
+    filterTagListEl.innerHTML = '';
+    const tagOpts = tagsInUse();
+    if (!tagOpts.length) {
       const empty = document.createElement('p');
       empty.className = 'filter-empty';
-      empty.textContent = 'No capabilities set yet.';
-      filterCapabilityListEl.appendChild(empty);
+      empty.textContent = 'No tags set yet.';
+      filterTagListEl.appendChild(empty);
     }
-    capOptions.forEach((cap) => {
+    tagOpts.forEach((tag) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'filter-option-btn';
-      btn.textContent = cap || 'None';
-      btn.classList.toggle('active', filterCapabilities.has(cap));
+      btn.textContent = tag || 'None';
+      btn.classList.toggle('active', filterTags.has(tag));
       btn.addEventListener('click', () => {
-        toggleFilterValue(filterCapabilities, cap);
-        btn.classList.toggle('active', filterCapabilities.has(cap));
+        toggleFilterValue(filterTags, tag);
+        btn.classList.toggle('active', filterTags.has(tag));
         syncFilterButton();
         render();
       });
-      filterCapabilityListEl.appendChild(btn);
+      filterTagListEl.appendChild(btn);
     });
 
     filterPhaseListEl.innerHTML = '';
@@ -884,7 +886,7 @@
   }
 
   function clearFilters() {
-    filterCapabilities.clear();
+    filterTags.clear();
     filterPhases.clear();
     filterColors.clear();
     renderFilterDialog();
@@ -892,98 +894,98 @@
     render();
   }
 
-  // ---------- Manage capabilities popup ----------
-  function populateCapabilitySelect() {
-    const current = editCapabilityInput.value;
-    editCapabilityInput.innerHTML = '';
+  // ---------- Manage tags popup ----------
+  function populateTagSelect() {
+    const current = editTagInput.value;
+    editTagInput.innerHTML = '';
     const blank = document.createElement('option');
     blank.value = '';
     blank.textContent = '—';
-    editCapabilityInput.appendChild(blank);
-    capabilityOptions.forEach((cap) => {
+    editTagInput.appendChild(blank);
+    tagOptions.forEach((tag) => {
       const opt = document.createElement('option');
-      opt.value = cap;
-      opt.textContent = cap;
-      editCapabilityInput.appendChild(opt);
+      opt.value = tag;
+      opt.textContent = tag;
+      editTagInput.appendChild(opt);
     });
-    editCapabilityInput.value = capabilityOptions.includes(current) ? current : '';
+    editTagInput.value = tagOptions.includes(current) ? current : '';
   }
 
-  function afterCapabilitiesChanged() {
-    populateCapabilitySelect();
-    renderCapabilitiesDialog();
+  function afterTagsChanged() {
+    populateTagSelect();
+    renderTagsDialog();
     render();
     scheduleSave();
   }
 
-  function renameCapability(index, rawName) {
-    const oldName = capabilityOptions[index];
+  function renameTag(index, rawName) {
+    const oldName = tagOptions[index];
     const newName = rawName.trim();
     if (!newName || newName === oldName) {
-      renderCapabilitiesDialog();
+      renderTagsDialog();
       return;
     }
 
-    const existingIndex = capabilityOptions.findIndex((c) => c === newName);
+    const existingIndex = tagOptions.findIndex((c) => c === newName);
     if (existingIndex !== -1 && existingIndex !== index) {
       // Renaming onto an existing entry merges the two — drop the duplicate
       // slot rather than leaving two identical options in the list.
-      capabilityOptions.splice(index, 1);
+      tagOptions.splice(index, 1);
     } else {
-      capabilityOptions[index] = newName;
+      tagOptions[index] = newName;
     }
 
     tasks.forEach((t) => {
-      if (t.capability === oldName) t.capability = newName;
+      if (t.tag === oldName) t.tag = newName;
     });
 
-    afterCapabilitiesChanged();
+    afterTagsChanged();
   }
 
-  function addCapability(rawName) {
+  function addTag(rawName) {
     const name = rawName.trim();
-    if (!name || capabilityOptions.includes(name)) return;
-    capabilityOptions.push(name);
-    afterCapabilitiesChanged();
+    if (!name || tagOptions.includes(name)) return;
+    tagOptions.push(name);
+    afterTagsChanged();
   }
 
-  function deleteCapability(index) {
-    const [name] = capabilityOptions.splice(index, 1);
+  function deleteTag(index) {
+    const [name] = tagOptions.splice(index, 1);
     tasks.forEach((t) => {
-      if (t.capability === name) t.capability = '';
+      if (t.tag === name) t.tag = '';
     });
-    afterCapabilitiesChanged();
+    afterTagsChanged();
   }
 
-  function renderCapabilitiesDialog() {
-    capabilitiesListEl.innerHTML = '';
-    capabilityOptions.forEach((cap, index) => {
+  function renderTagsDialog() {
+    tagsListEl.innerHTML = '';
+    tagOptions.forEach((tag, index) => {
       const li = document.createElement('li');
-      li.className = 'capabilities-item';
+      li.className = 'tags-item';
 
       const input = document.createElement('input');
       input.type = 'text';
-      input.value = cap;
+      input.value = tag;
       input.maxLength = 60;
-      input.addEventListener('change', () => renameCapability(index, input.value));
+      input.addEventListener('change', () => renameTag(index, input.value));
       li.appendChild(input);
 
       const delBtn = document.createElement('button');
       delBtn.type = 'button';
       delBtn.className = 'delete-btn';
       delBtn.textContent = '×';
-      delBtn.title = 'Delete capability';
-      delBtn.addEventListener('click', () => deleteCapability(index));
+      delBtn.title = 'Delete tag';
+      delBtn.addEventListener('click', () => deleteTag(index));
       li.appendChild(delBtn);
 
-      capabilitiesListEl.appendChild(li);
+      tagsListEl.appendChild(li);
     });
   }
 
-  function openCapabilitiesDialog() {
-    renderCapabilitiesDialog();
-    capabilitiesAddInput.value = '';
-    capabilitiesDialog.showModal();
+  function openTagsDialog() {
+    renderTagsDialog();
+    tagsAddInput.value = '';
+    tagsDialog.showModal();
   }
 
   // ---------- Timeline start date ----------
@@ -1029,7 +1031,7 @@
   // Tasks that end before the visible range starts have no remaining
   // duration to show, so they're left out of the timeline entirely.
   function taskPassesFilter(t) {
-    if (filterCapabilities.size && !filterCapabilities.has(t.capability || '')) return false;
+    if (filterTags.size && !filterTags.has(t.tag || '')) return false;
     if (filterPhases.size && !filterPhases.has(PHASE_OPTIONS.includes(t.phase) ? t.phase : DEFAULT_PHASE)) return false;
     if (filterColors.size && !filterColors.has((t.color || '').toLowerCase())) return false;
     return true;
@@ -1108,7 +1110,7 @@
       editBtn.type = 'button';
       editBtn.className = 'edit-btn';
       editBtn.textContent = '✎';
-      editBtn.title = 'Edit name, start date, duration, color, capability, and phase';
+      editBtn.title = 'Edit name, start date, duration, color, tag, and phase';
       editBtn.addEventListener('click', () => openEditDialog(task));
       label.appendChild(editBtn);
 
@@ -1379,7 +1381,7 @@
       durationWeeks: 1,
       order: tasks.length,
       color: DEFAULT_COLOR_1,
-      capability: '',
+      tag: '',
       phase: DEFAULT_PHASE,
     };
     tasks.push(newTask);
@@ -1418,7 +1420,7 @@
     editStartInput.value = task.startDate;
     editDurationInput.value = task.durationWeeks;
     editColorInput.value = task.color || DEFAULT_COLOR_1;
-    editCapabilityInput.value = task.capability || '';
+    editTagInput.value = task.tag || '';
     editPhaseInput.value = task.phase || DEFAULT_PHASE;
     editDialog.showModal();
     editNameInput.focus();
@@ -1439,7 +1441,7 @@
     if (chosen) task.startDate = formatISODate(mondayOf(chosen));
     task.durationWeeks = Math.max(1, parseInt(editDurationInput.value, 10) || 1);
     task.color = editColorInput.value || '';
-    task.capability = editCapabilityInput.value || '';
+    task.tag = editTagInput.value || '';
     task.phase = editPhaseInput.value || DEFAULT_PHASE;
 
     render();
@@ -1597,7 +1599,7 @@
   }
 
   function backupData() {
-    const blob = new Blob([serializeJson(tasks, capabilityOptions)], { type: 'application/json' });
+    const blob = new Blob([serializeJson(tasks, tagOptions)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const stamp = formatISODate(new Date());
     const a = document.createElement('a');
@@ -1618,6 +1620,26 @@
       a.click();
       URL.revokeObjectURL(url);
     }, 'image/png');
+  }
+
+  function csvField(value) {
+    const str = String(value == null ? '' : value);
+    return /[",\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+  }
+
+  function exportCsv() {
+    const rows = sortedTasks().map((t) => [t.name, t.startDate, t.durationWeeks, t.tag, t.phase]);
+    const lines = [
+      ['name', 'startDate', 'durationWeeks', 'tag', 'phase'],
+      ...rows,
+    ].map((row) => row.map(csvField).join(','));
+    const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = baseFileName() + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function exportPdf() {
@@ -1650,7 +1672,7 @@
   async function saveTasks() {
     if (!fileHandle) return;
     try {
-      await writeFile(serializeJson(tasks, capabilityOptions));
+      await writeFile(serializeJson(tasks, tagOptions));
       saveStatusEl.textContent = 'Saved';
       saveStatusEl.className = 'save-status';
     } catch (err) {
@@ -1668,6 +1690,7 @@
   backupDataBtn.addEventListener('click', backupData);
   exportPngBtn.addEventListener('click', exportPng);
   exportPdfBtn.addEventListener('click', exportPdf);
+  exportCsvBtn.addEventListener('click', exportCsv);
   viewButtons.forEach((btn) => btn.addEventListener('click', () => setViewMode(btn.dataset.view)));
   syncViewButtons();
 
@@ -1693,14 +1716,14 @@
   filterCloseBtn.addEventListener('click', () => filterDialog.close());
   filterClearBtn.addEventListener('click', clearFilters);
 
-  populateCapabilitySelect();
-  capabilitiesBtn.addEventListener('click', openCapabilitiesDialog);
-  capabilitiesCloseBtn.addEventListener('click', () => capabilitiesDialog.close());
-  capabilitiesAddForm.addEventListener('submit', (e) => {
+  populateTagSelect();
+  tagsBtn.addEventListener('click', openTagsDialog);
+  tagsCloseBtn.addEventListener('click', () => tagsDialog.close());
+  tagsAddForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    addCapability(capabilitiesAddInput.value);
-    capabilitiesAddInput.value = '';
-    capabilitiesAddInput.focus();
+    addTag(tagsAddInput.value);
+    tagsAddInput.value = '';
+    tagsAddInput.focus();
   });
 
   cleanupBtn.addEventListener('click', openCleanupDialog);
